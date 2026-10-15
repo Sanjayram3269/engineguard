@@ -1,0 +1,4 @@
+experiment,feature_count,features,validation_accuracy,validation_macro_f1,lean_recall,low_voltage_recall,normal_recall,rich_recall
+Top 8 training-importance features,8,"CO, Force, HC, Power, Consumption L/100KM, Consumption L/H, Speed, O2",0.7542857142857143,0.7623957318880468,0.5457777777777778,0.5038095238095238,1.0,1.0
+All 14 features,14,"MAP, TPS, Force, Power, RPM, Consumption L/H, Consumption L/100KM, Speed, CO, HC, CO2, O2, Lambda, AFR",0.7479761904761905,0.7563160631427698,0.5328888888888889,0.49238095238095236,1.0,1.0
+Reduced correlated features,10,"MAP, TPS, Power, RPM, Consumption L/H, Consumption L/100KM, CO, HC, CO2, O2",0.7397619047619047,0.7484444405880111,0.5137777777777778,0.48,1.0,1.0
