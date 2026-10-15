@@ -11,10 +11,10 @@ MODEL_PATH = ROOT / "models" / "benchmark_classifier_compressed.joblib"
 METADATA_PATH = ROOT / "models" / "benchmark_metadata.json"
 
 CLASS_NAMES = {
-    0: "Normal Engine",
-    1: "Rich Mixture",
-    2: "Lean Mixture",
-    3: "Low Voltage",
+    0: "Normal (no fault)",
+    1: "Fault type 1",
+    2: "Fault type 2",
+    3: "Fault type 3",
 }
 
 # Selected on validation data and evaluated on the held-out test set.

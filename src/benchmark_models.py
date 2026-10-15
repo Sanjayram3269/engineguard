@@ -36,10 +36,10 @@ TARGET = "Fault"
 SEED = 42
 
 CLASS_NAMES = {
-    0: "Normal",
-    1: "Rich mixture",
-    2: "Lean mixture",
-    3: "Low voltage",
+    0: "Normal (no fault)",
+    1: "Fault type 1",
+    2: "Fault type 2",
+    3: "Fault type 3",
 }
 
 

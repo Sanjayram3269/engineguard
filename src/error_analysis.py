@@ -13,10 +13,10 @@ MODEL_PATH = ROOT / "models" / "benchmark_classifier.joblib"
 REPORT_DIR = ROOT / "reports"
 
 CLASS_NAMES = {
-    0: "Normal",
-    1: "Rich mixture",
-    2: "Lean mixture",
-    3: "Low voltage",
+    0: "Normal (no fault)",
+    1: "Fault type 1",
+    2: "Fault type 2",
+    3: "Fault type 3",
 }
 
 REPORT_DIR.mkdir(exist_ok=True)

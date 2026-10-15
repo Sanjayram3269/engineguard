@@ -1,5 +1,5 @@
-,Predicted 0 - Normal,Predicted 1 - Rich mixture,Predicted 2 - Lean mixture,Predicted 3 - Low voltage
-Actual 0 - Normal,2400,0,0,0
-Actual 1 - Rich mixture,0,1650,0,0
-Actual 2 - Lean mixture,0,0,1230,1020
-Actual 3 - Low voltage,0,0,1045,1055
+,Predicted 0 - Normal (no fault),Predicted 1 - Fault type 1,Predicted 2 - Fault type 2,Predicted 3 - Fault type 3
+Actual 0 - Normal (no fault),2400,0,0,0
+Actual 1 - Fault type 1,0,1650,0,0
+Actual 2 - Fault type 2,0,0,1230,1020
+Actual 3 - Fault type 3,0,0,1045,1055
