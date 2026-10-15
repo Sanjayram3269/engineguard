@@ -1,0 +1,59 @@
+{
+  "project": "EngineGuard",
+  "selected_model": "Random Forest",
+  "target_column": "Fault",
+  "class_names": {
+    "0": "Normal",
+    "1": "Rich mixture",
+    "2": "Lean mixture",
+    "3": "Low voltage"
+  },
+  "feature_names": [
+    "MAP",
+    "TPS",
+    "Force",
+    "Power",
+    "RPM",
+    "Consumption L/H",
+    "Consumption L/100KM",
+    "Speed",
+    "CO",
+    "HC",
+    "CO2",
+    "O2",
+    "Lambda",
+    "AFR"
+  ],
+  "random_state": 42,
+  "duplicate_rows_removed": 1,
+  "split_sizes": {
+    "train": 39198,
+    "validation": 8400,
+    "test": 8400
+  },
+  "selection_metric": "validation_macro_f1",
+  "validation_results": [
+    {
+      "model": "Random Forest",
+      "validation_accuracy": 0.7479761904761905,
+      "validation_macro_f1": 0.7563160631427698,
+      "training_seconds": 4.811
+    },
+    {
+      "model": "Extra Trees",
+      "validation_accuracy": 0.7439285714285714,
+      "validation_macro_f1": 0.7521188127855865,
+      "training_seconds": 2.099
+    },
+    {
+      "model": "XGBoost",
+      "validation_accuracy": 0.743452380952381,
+      "validation_macro_f1": 0.7519505654418404,
+      "training_seconds": 3.057
+    }
+  ],
+  "test_accuracy": 0.7541666666666667,
+  "test_macro_f1": 0.7622589075991663,
+  "evaluation_warning": "Stratified random split. If related records from the same experiment or operating condition appear in multiple splits, test results may overestimate generalization to unseen runs.",
+  "mean_single_row_inference_latency_ms": 76.66720999986865
+}

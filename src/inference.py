@@ -7,9 +7,11 @@ import numpy as np
 import pandas as pd
 
 
+
 ROOT = Path(__file__).resolve().parent.parent
-MODEL_PATH = ROOT / "models" / "engineguard_classifier.joblib"
-METADATA_PATH = ROOT / "models" / "model_metadata.json"
+MODEL_PATH = ROOT / "models" / "benchmark_classifier_compressed.joblib"
+METADATA_PATH = ROOT / "models" / "benchmark_metadata.json"
+
 
 CLASS_NAMES = {
     0: "Normal Engine",
@@ -100,7 +102,7 @@ def predict_tabular(input_data: dict) -> dict:
                 "test_accuracy": metadata["test_accuracy"],
                 "test_macro_f1": metadata["test_macro_f1"],
                 "mean_inference_latency_ms":
-                    metadata["mean_single_row_inference_latency_ms"],
+                    metadata.get("mean_single_row_inference_latency_ms"),
                 "class_probabilities": scores,
                 "model": metadata["selected_model"],
             },
