@@ -1,0 +1,26 @@
+TUNED RANDOM FOREST - ENGINEPULSE
+=============================================
+
+Total recordings: 297
+Number of features: 26
+Training recordings: 237
+Test recordings: 60
+Best parameters: {'rf__class_weight': None, 'rf__max_depth': 10, 'rf__max_features': 1.0, 'rf__min_samples_leaf': 1, 'rf__min_samples_split': 5, 'rf__n_estimators': 100}
+Best CV macro F1: 0.6013
+Test accuracy: 0.6833
+Test macro F1: 0.6791
+
+                  precision    recall  f1-score   support
+
+    Engine Issue       0.63      0.71      0.67        17
+Non engine issue       0.71      0.77      0.74        22
+   Normal engine       0.71      0.57      0.63        21
+
+        accuracy                           0.68        60
+       macro avg       0.68      0.68      0.68        60
+    weighted avg       0.69      0.68      0.68        60
+
+Confusion matrix:
+[[12  2  3]
+ [ 3 17  2]
+ [ 4  5 12]]

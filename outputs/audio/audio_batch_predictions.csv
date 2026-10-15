@@ -1,0 +1,297 @@
+filename,path,actual_label,predicted_label,correct,prob_Engine Issue,prob_Non engine issue,prob_Normal engine
+001.mp3,data\Audio\Engine Issue\001.mp3,Engine Issue,Engine Issue,True,0.8629040476501022,0.05959714795008913,0.0774988043998087
+002.mp3,data\Audio\Engine Issue\002.mp3,Engine Issue,Engine Issue,True,0.400980887476942,0.23722268907563024,0.36179642344742774
+003.mp3,data\Audio\Engine Issue\003.mp3,Engine Issue,Engine Issue,True,0.4255153576174572,0.23872268907563027,0.3357619533069125
+004(1).mp3,data\Audio\Engine Issue\004(1).mp3,Engine Issue,Engine Issue,True,0.7978830816879597,0.04287301587301587,0.1592439024390244
+004.mp3,data\Audio\Engine Issue\004.mp3,Engine Issue,Engine Issue,True,0.7873249299719888,0.15272268907563025,0.05995238095238096
+005.mp3,data\Audio\Engine Issue\005.mp3,Engine Issue,Engine Issue,True,0.6754479458450048,0.09283380018674137,0.23171825396825393
+007.mp3,data\Audio\Engine Issue\007.mp3,Engine Issue,Engine Issue,True,0.8183333333333332,0.12366666666666665,0.05800000000000001
+01.mp3,data\Audio\Engine Issue\01.mp3,Engine Issue,Engine Issue,True,0.6719047619047619,0.18809523809523815,0.14
+02.mp3,data\Audio\Engine Issue\02.mp3,Engine Issue,Engine Issue,True,0.7044509803921569,0.1984607843137255,0.09708823529411767
+022.mp3,data\Audio\Engine Issue\022.mp3,Engine Issue,Engine Issue,True,0.6931017316017316,0.26356493506493506,0.04333333333333334
+025.mp3,data\Audio\Engine Issue\025.mp3,Engine Issue,Engine Issue,True,0.6859533493642727,0.045176046176046175,0.26887060445968136
+028.mp3,data\Audio\Engine Issue\028.mp3,Engine Issue,Engine Issue,True,0.6481535576527161,0.25292156862745097,0.09892487371983293
+029.mp3,data\Audio\Engine Issue\029.mp3,Engine Issue,Engine Issue,True,0.7423725490196079,0.14012745098039217,0.1175
+03.mp3,data\Audio\Engine Issue\03.mp3,Engine Issue,Engine Issue,True,0.7167415966386553,0.21505602240896363,0.06820238095238096
+04.mp3,data\Audio\Engine Issue\04.mp3,Engine Issue,Engine Issue,True,0.7167415966386553,0.21505602240896363,0.06820238095238096
+05.mp3,data\Audio\Engine Issue\05.mp3,Engine Issue,Engine Issue,True,0.6570342935251022,0.09262745098039217,0.2503382554945055
+06.mp3,data\Audio\Engine Issue\06.mp3,Engine Issue,Engine Issue,True,0.8176936906868042,0.1319642814701638,0.05034202784303215
+07.mp3,data\Audio\Engine Issue\07.mp3,Engine Issue,Engine Issue,True,0.5839079365079365,0.3607396825396825,0.055352380952380945
+08.mp3,data\Audio\Engine Issue\08.mp3,Engine Issue,Engine Issue,True,0.6133011204481792,0.10362745098039217,0.28307142857142853
+09.mp3,data\Audio\Engine Issue\09.mp3,Engine Issue,Engine Issue,True,0.7484413135883724,0.06643048128342245,0.1851282051282051
+10.mp3,data\Audio\Engine Issue\10.mp3,Engine Issue,Normal engine,False,0.3991344537815126,0.20031792717086833,0.40054761904761904
+11.mp3,data\Audio\Engine Issue\11.mp3,Engine Issue,Engine Issue,True,0.38278172288776796,0.3611666666666666,0.2560516104455653
+12.mp3,data\Audio\Engine Issue\12.mp3,Engine Issue,Engine Issue,True,0.7289834590246355,0.15979570494864612,0.11122083602671838
+13.mp3,data\Audio\Engine Issue\13.mp3,Engine Issue,Engine Issue,True,0.576260723653837,0.16350237670825904,0.2602368996379039
+14.mp3,data\Audio\Engine Issue\14.mp3,Engine Issue,Engine Issue,True,0.8652881746342292,0.08340825906120024,0.0513035663045706
+15.mp3,data\Audio\Engine Issue\15.mp3,Engine Issue,Engine Issue,True,0.8195447101917689,0.12462745098039216,0.05582783882783882
+16.mp3,data\Audio\Engine Issue\16.mp3,Engine Issue,Engine Issue,True,0.7819201864132996,0.1311031703590527,0.08697664322764753
+17.mp3,data\Audio\Engine Issue\17.mp3,Engine Issue,Engine Issue,True,0.7445,0.185,0.07050000000000001
+18.mp3,data\Audio\Engine Issue\18.mp3,Engine Issue,Engine Issue,True,0.7572113768584354,0.14115126050420168,0.10163736263736264
+19.mp3,data\Audio\Engine Issue\19.mp3,Engine Issue,Non engine issue,False,0.33991666666666664,0.5595000000000001,0.10058333333333332
+20.mp3,data\Audio\Engine Issue\20.mp3,Engine Issue,Engine Issue,True,0.6040675435675436,0.06226190476190476,0.3336705516705517
+21.mp3,data\Audio\Engine Issue\21.mp3,Engine Issue,Engine Issue,True,0.847683046429101,0.06220825906120023,0.09010869450969881
+22.mp3,data\Audio\Engine Issue\22.mp3,Engine Issue,Engine Issue,True,0.9350201864132999,0.018891265597147947,0.04608854798955229
+23.mp3,data\Audio\Engine Issue\23.mp3,Engine Issue,Engine Issue,True,0.8778095421555966,0.058463814616755795,0.06372664322764753
+24.mp3,data\Audio\Engine Issue\24.mp3,Engine Issue,Engine Issue,True,0.7138737446197991,0.17112745098039217,0.11499880439980868
+25.mp3,data\Audio\Engine Issue\25.mp3,Engine Issue,Engine Issue,True,0.9350201864132999,0.018891265597147947,0.04608854798955229
+26.mp3,data\Audio\Engine Issue\26.mp3,Engine Issue,Engine Issue,True,0.7745945238405784,0.10909714795008912,0.11630832820933251
+27.mp3,data\Audio\Engine Issue\27.mp3,Engine Issue,Engine Issue,True,0.38278172288776796,0.3611666666666666,0.2560516104455653
+28.mp3,data\Audio\Engine Issue\28.mp3,Engine Issue,Engine Issue,True,0.8428095238095237,0.05469047619047619,0.1025
+29.mp3,data\Audio\Engine Issue\29.mp3,Engine Issue,Engine Issue,True,0.8153875320757673,0.09009126559714793,0.09452120232708465
+30.mp3,data\Audio\Engine Issue\30.mp3,Engine Issue,Engine Issue,True,0.6355689865689865,0.05203968253968254,0.31239133089133087
+31.mp3,data\Audio\Engine Issue\31.mp3,Engine Issue,Engine Issue,True,0.8652881746342292,0.08340825906120024,0.0513035663045706
+32.mp3,data\Audio\Engine Issue\32.mp3,Engine Issue,Engine Issue,True,0.7618333333333334,0.08602380952380953,0.15214285714285714
+33.mp3,data\Audio\Engine Issue\33.mp3,Engine Issue,Engine Issue,True,0.6579303030303032,0.311669696969697,0.030399999999999996
+34.mp3,data\Audio\Engine Issue\34.mp3,Engine Issue,Engine Issue,True,0.8617706137637271,0.07536904337492573,0.06286034286134717
+35.mp3,data\Audio\Engine Issue\35.mp3,Engine Issue,Engine Issue,True,0.7908040476501023,0.12096381461675579,0.08823213773314205
+36.mp3,data\Audio\Engine Issue\36.mp3,Engine Issue,Engine Issue,True,0.8387710806171351,0.06763048128342246,0.0935984380994424
+37.mp3,data\Audio\Engine Issue\37.mp3,Engine Issue,Engine Issue,True,0.7244564748976514,0.08404411764705882,0.1914994074552898
+38.mp3,data\Audio\Engine Issue\38.mp3,Engine Issue,Engine Issue,True,0.6519896016794062,0.18688048128342247,0.16112991703717136
+39.mp3,data\Audio\Engine Issue\39.mp3,Engine Issue,Engine Issue,True,0.6595620490620491,0.13452380952380952,0.2059141414141414
+40.mp3,data\Audio\Engine Issue\40.mp3,Engine Issue,Engine Issue,True,0.6782186813186815,0.17053333333333331,0.15124798534798534
+41.mp3,data\Audio\Engine Issue\41.mp3,Engine Issue,Engine Issue,True,0.4328605957126953,0.23710364145658264,0.330035762830722
+42.mp3,data\Audio\Engine Issue\42.mp3,Engine Issue,Engine Issue,True,0.5071904761904763,0.12292857142857143,0.3698809523809524
+43.mp3,data\Audio\Engine Issue\43.mp3,Engine Issue,Engine Issue,True,0.724449472096531,0.10229411764705883,0.17325641025641025
+44.mp3,data\Audio\Engine Issue\44.mp3,Engine Issue,Engine Issue,True,0.6684102564102565,0.10716666666666667,0.22442307692307695
+628539__greatsoundstube__car-engine-under-bonnet.wav,data\Audio\Engine Issue\628539__greatsoundstube__car-engine-under-bonnet.wav,Engine Issue,Engine Issue,True,0.7170707143167688,0.12909714795008914,0.15383213773314203
+725956__teamenfil__202403.wav,data\Audio\Engine Issue\725956__teamenfil__202403.wav,Engine Issue,Engine Issue,True,0.7260858585858587,0.13674747474747473,0.13716666666666666
+engine-moving-failing-tranny.mp3,data\Audio\Engine Issue\engine-moving-failing-tranny.mp3,Engine Issue,Engine Issue,True,0.5872738644292728,0.19608823529411765,0.21663790027660948
+engine-running-without-oil.mp3,data\Audio\Engine Issue\engine-running-without-oil.mp3,Engine Issue,Engine Issue,True,0.8002164150212931,0.07753968253968255,0.12224390243902439
+engine-seizing-up.mp3,data\Audio\Engine Issue\engine-seizing-up.mp3,Engine Issue,Normal engine,False,0.28990701916012307,0.2703893557422969,0.43970362509758004
+old-broken-engine.mp3,data\Audio\Engine Issue\old-broken-engine.mp3,Engine Issue,Engine Issue,True,0.38090231990231993,0.24328968253968258,0.3758079975579976
+old-fiat-127-style-car-cejjiuy7.mp3,data\Audio\Engine Issue\old-fiat-127-style-car-cejjiuy7.mp3,Engine Issue,Engine Issue,True,0.6132009803921568,0.16262745098039214,0.22417156862745094
+piston-slapping.mp3,data\Audio\Engine Issue\piston-slapping.mp3,Engine Issue,Engine Issue,True,0.7443895751944534,0.15636652236652238,0.09924390243902438
+ssstik.io_1764467254685.mp3,data\Audio\Engine Issue\ssstik.io_1764467254685.mp3,Engine Issue,Engine Issue,True,0.4801614379084967,0.45610522875816994,0.06373333333333334
+ssstik.io_1764467313282.mp3,data\Audio\Engine Issue\ssstik.io_1764467313282.mp3,Engine Issue,Engine Issue,True,0.6222773109243698,0.2567226890756303,0.121
+ssstik.io_1764467381038.mp3,data\Audio\Engine Issue\ssstik.io_1764467381038.mp3,Engine Issue,Engine Issue,True,0.7649959922430511,0.17332745098039212,0.061676556776556785
+ssstik.io_1764467645686.mp3,data\Audio\Engine Issue\ssstik.io_1764467645686.mp3,Engine Issue,Engine Issue,True,0.7791602564102564,0.19699999999999998,0.02383974358974359
+ssstik.io_1764467675397.mp3,data\Audio\Engine Issue\ssstik.io_1764467675397.mp3,Engine Issue,Engine Issue,True,0.6390114379084967,0.31182189542483657,0.04916666666666667
+ssstik.io_1764467713444.mp3,data\Audio\Engine Issue\ssstik.io_1764467713444.mp3,Engine Issue,Engine Issue,True,0.7111666666666666,0.23833333333333329,0.05050000000000001
+ssstik.io_1764467813614.mp3,data\Audio\Engine Issue\ssstik.io_1764467813614.mp3,Engine Issue,Engine Issue,True,0.7159047619047618,0.13669047619047617,0.14740476190476193
+ssstik.io_1764467858482.mp3,data\Audio\Engine Issue\ssstik.io_1764467858482.mp3,Engine Issue,Engine Issue,True,0.6276506140917906,0.13779411764705882,0.23455526826115058
+ssstik.io_1764467888243.mp3,data\Audio\Engine Issue\ssstik.io_1764467888243.mp3,Engine Issue,Engine Issue,True,0.6222773109243698,0.2567226890756303,0.121
+ssstik.io_1764467958291.mp3,data\Audio\Engine Issue\ssstik.io_1764467958291.mp3,Engine Issue,Engine Issue,True,0.7059425659945028,0.19616078431372547,0.09789664969177161
+ssstik.io_1764468029713.mp3,data\Audio\Engine Issue\ssstik.io_1764468029713.mp3,Engine Issue,Engine Issue,True,0.3884812834224599,0.30996078431372553,0.3015579322638146
+ssstik.io_1764468111100.mp3,data\Audio\Engine Issue\ssstik.io_1764468111100.mp3,Engine Issue,Non engine issue,False,0.17691143790849675,0.6642718954248366,0.15881666666666663
+ssstik.io_1764468737376.mp3,data\Audio\Engine Issue\ssstik.io_1764468737376.mp3,Engine Issue,Engine Issue,True,0.5954000000000002,0.3647000000000001,0.039900000000000005
+ssstik.io_1764468780524.mp3,data\Audio\Engine Issue\ssstik.io_1764468780524.mp3,Engine Issue,Engine Issue,True,0.8093535197466332,0.1105579322638146,0.0800885479895523
+ssstik.io_1764468824085.mp3,data\Audio\Engine Issue\ssstik.io_1764468824085.mp3,Engine Issue,Engine Issue,True,0.8165476373936918,0.08798762414056532,0.09546473846574276
+the-sound-of-a-broken-car-engine.mp3,data\Audio\Engine Issue\the-sound-of-a-broken-car-engine.mp3,Engine Issue,Normal engine,False,0.006320184426229508,0.012142857142857143,0.9815369584309134
+the-sound-of-a-broken-engine-in-a-car-that-cannot-be-started.mp3,data\Audio\Engine Issue\the-sound-of-a-broken-engine-in-a-car-that-cannot-be-started.mp3,Engine Issue,Engine Issue,True,0.6623864468864469,0.2841428571428571,0.05347069597069597
+the-sound-of-a-broken-engine.mp3,data\Audio\Engine Issue\the-sound-of-a-broken-engine.mp3,Engine Issue,Engine Issue,True,0.6776237446197991,0.17624649859943978,0.1461297567807611
+the-sound-of-a-broken-motor-in-the-car-for-editing.mp3,data\Audio\Engine Issue\the-sound-of-a-broken-motor-in-the-car-for-editing.mp3,Engine Issue,Engine Issue,True,0.8431721611721612,0.09916666666666667,0.05766117216117216
+tranny-slipping-engine-reving.mp3,data\Audio\Engine Issue\tranny-slipping-engine-reving.mp3,Engine Issue,Engine Issue,True,0.5638333333333333,0.28291666666666665,0.15325
+volkswagen-golf-mk-4-engi-wocubdun.mp3,data\Audio\Engine Issue\volkswagen-golf-mk-4-engi-wocubdun.mp3,Engine Issue,Engine Issue,True,0.5378122860745811,0.012238095238095237,0.4499496186873237
+001.mp3,data\Audio\Non engine issue\001.mp3,Non engine issue,Non engine issue,True,0.2333333333333333,0.657142857142857,0.10952380952380952
+002.mp3,data\Audio\Non engine issue\002.mp3,Non engine issue,Non engine issue,True,0.0919392156862745,0.8044703081232493,0.10359047619047619
+003.mp3,data\Audio\Non engine issue\003.mp3,Non engine issue,Non engine issue,True,0.06761363636363636,0.843,0.08938636363636362
+005.mp3,data\Audio\Non engine issue\005.mp3,Non engine issue,Non engine issue,True,0.052000000000000005,0.9165833333333333,0.03141666666666667
+006.mp3,data\Audio\Non engine issue\006.mp3,Non engine issue,Non engine issue,True,0.26031746031746034,0.6024444444444443,0.13723809523809524
+007.mp3,data\Audio\Non engine issue\007.mp3,Non engine issue,Non engine issue,True,0.12903921568627452,0.8111274509803923,0.05983333333333334
+008.mp3,data\Audio\Non engine issue\008.mp3,Non engine issue,Non engine issue,True,0.041833333333333333,0.8737857142857144,0.08438095238095236
+009.mp3,data\Audio\Non engine issue\009.mp3,Non engine issue,Non engine issue,True,0.24622222222222226,0.4997777777777778,0.254
+010.mp3,data\Audio\Non engine issue\010.mp3,Non engine issue,Non engine issue,True,0.2744392156862745,0.5646607843137255,0.1609
+011.mp3,data\Audio\Non engine issue\011.mp3,Non engine issue,Non engine issue,True,0.07722222222222222,0.8236111111111112,0.09916666666666668
+012.mp3,data\Audio\Non engine issue\012.mp3,Non engine issue,Non engine issue,True,0.28319696969696967,0.670969696969697,0.04583333333333333
+013.mp3,data\Audio\Non engine issue\013.mp3,Non engine issue,Non engine issue,True,0.044833333333333336,0.857202380952381,0.09796428571428573
+014.mp3,data\Audio\Non engine issue\014.mp3,Non engine issue,Non engine issue,True,0.18169910714285714,0.7483666666666666,0.06993422619047618
+015.mp3,data\Audio\Non engine issue\015.mp3,Non engine issue,Non engine issue,True,0.19833986928104574,0.7277385620915031,0.07392156862745097
+016.mp3,data\Audio\Non engine issue\016.mp3,Non engine issue,Non engine issue,True,0.2314293001753547,0.5122385620915031,0.256332137733142
+017.mp3,data\Audio\Non engine issue\017.mp3,Non engine issue,Non engine issue,True,0.20133333333333334,0.7419999999999999,0.056666666666666664
+018.mp3,data\Audio\Non engine issue\018.mp3,Non engine issue,Non engine issue,True,0.17369696969696968,0.734469696969697,0.09183333333333332
+019.mp3,data\Audio\Non engine issue\019.mp3,Non engine issue,Non engine issue,True,0.08066666666666666,0.8083333333333332,0.11100000000000002
+020.mp3,data\Audio\Non engine issue\020.mp3,Non engine issue,Non engine issue,True,0.13666666666666666,0.8404166666666666,0.022916666666666665
+021.mp3,data\Audio\Non engine issue\021.mp3,Non engine issue,Non engine issue,True,0.2569161512682509,0.5794052287581699,0.16367861997357921
+023.mp3,data\Audio\Non engine issue\023.mp3,Non engine issue,Non engine issue,True,0.11226190476190476,0.7163095238095238,0.17142857142857143
+024.mp3,data\Audio\Non engine issue\024.mp3,Non engine issue,Non engine issue,True,0.142,0.764,0.09400000000000003
+026.mp3,data\Audio\Non engine issue\026.mp3,Non engine issue,Non engine issue,True,0.09681666666666666,0.7757,0.12748333333333334
+027.mp3,data\Audio\Non engine issue\027.mp3,Non engine issue,Non engine issue,True,0.22733333333333333,0.736,0.03666666666666667
+030.mp3,data\Audio\Non engine issue\030.mp3,Non engine issue,Non engine issue,True,0.08033333333333333,0.8483333333333332,0.07133333333333333
+031.mp3,data\Audio\Non engine issue\031.mp3,Non engine issue,Non engine issue,True,0.06133333333333333,0.810952380952381,0.12771428571428572
+032.mp3,data\Audio\Non engine issue\032.mp3,Non engine issue,Non engine issue,True,0.11166666666666666,0.8166666666666668,0.07166666666666666
+033.mp3,data\Audio\Non engine issue\033.mp3,Non engine issue,Non engine issue,True,0.12892857142857142,0.7572380952380953,0.11383333333333333
+034.mp3,data\Audio\Non engine issue\034.mp3,Non engine issue,Non engine issue,True,0.12892857142857142,0.7572380952380953,0.11383333333333333
+035.mp3,data\Audio\Non engine issue\035.mp3,Non engine issue,Non engine issue,True,0.1343285714285714,0.7986761904761904,0.0669952380952381
+036.mp3,data\Audio\Non engine issue\036.mp3,Non engine issue,Non engine issue,True,0.05458333333333333,0.8983333333333333,0.04708333333333334
+037.mp3,data\Audio\Non engine issue\037.mp3,Non engine issue,Non engine issue,True,0.15823809523809523,0.7408571428571429,0.10090476190476191
+052166_car-lights-ding-81631.mp3,data\Audio\Non engine issue\052166_car-lights-ding-81631.mp3,Non engine issue,Non engine issue,True,0.23697222222222222,0.44227777777777777,0.32075000000000004
+100.mp3,data\Audio\Non engine issue\100.mp3,Non engine issue,Non engine issue,True,0.11616666666666665,0.8263333333333334,0.0575
+101.mp3,data\Audio\Non engine issue\101.mp3,Non engine issue,Non engine issue,True,0.4002614379084967,0.4914052287581699,0.10833333333333334
+102.mp3,data\Audio\Non engine issue\102.mp3,Non engine issue,Non engine issue,True,0.18592276422764228,0.6739999999999999,0.14007723577235773
+103.mp3,data\Audio\Non engine issue\103.mp3,Non engine issue,Non engine issue,True,0.0704,0.8638666666666667,0.06573333333333334
+104.mp3,data\Audio\Non engine issue\104.mp3,Non engine issue,Non engine issue,True,0.23076190476190472,0.7434047619047618,0.02583333333333333
+105.mp3,data\Audio\Non engine issue\105.mp3,Non engine issue,Non engine issue,True,0.09416666666666666,0.8383333333333333,0.0675
+106.mp3,data\Audio\Non engine issue\106.mp3,Non engine issue,Non engine issue,True,0.18983333333333335,0.6984999999999999,0.11166666666666668
+1982-chevy-squarebody-fail-start-422887 (1).mp3,data\Audio\Non engine issue\1982-chevy-squarebody-fail-start-422887 (1).mp3,Non engine issue,Non engine issue,True,0.052000000000000005,0.90225,0.04574999999999999
+1982-chevy-squarebody-fail-start-422887 (2).mp3,data\Audio\Non engine issue\1982-chevy-squarebody-fail-start-422887 (2).mp3,Non engine issue,Non engine issue,True,0.052000000000000005,0.90225,0.04574999999999999
+1982-chevy-squarebody-fail-start-422887 (3).mp3,data\Audio\Non engine issue\1982-chevy-squarebody-fail-start-422887 (3).mp3,Non engine issue,Non engine issue,True,0.062,0.9089166666666665,0.029083333333333333
+81.mp3,data\Audio\Non engine issue\81.mp3,Non engine issue,Non engine issue,True,0.1640833333333333,0.7791666666666666,0.05675000000000001
+82.mp3,data\Audio\Non engine issue\82.mp3,Non engine issue,Engine Issue,False,0.5002373809834355,0.2767941176470588,0.22296850136950566
+83.mp3,data\Audio\Non engine issue\83.mp3,Non engine issue,Non engine issue,True,0.09117320261437908,0.6750718954248367,0.23375490196078436
+84.mp3,data\Audio\Non engine issue\84.mp3,Non engine issue,Non engine issue,True,0.059,0.7391666666666667,0.20183333333333334
+85.mp3,data\Audio\Non engine issue\85.mp3,Non engine issue,Non engine issue,True,0.19222222222222224,0.7379444444444444,0.06983333333333333
+86.mp3,data\Audio\Non engine issue\86.mp3,Non engine issue,Non engine issue,True,0.1796666666666667,0.7228333333333334,0.0975
+87.mp3,data\Audio\Non engine issue\87.mp3,Non engine issue,Non engine issue,True,0.14983333333333332,0.6617380952380951,0.18842857142857142
+88.mp3,data\Audio\Non engine issue\88.mp3,Non engine issue,Non engine issue,True,0.062489583333333334,0.8371666666666665,0.10034375
+89.mp3,data\Audio\Non engine issue\89.mp3,Non engine issue,Non engine issue,True,0.2025,0.7410833333333332,0.056416666666666664
+90.mp3,data\Audio\Non engine issue\90.mp3,Non engine issue,Non engine issue,True,0.23841025641025643,0.6883095238095236,0.07328021978021977
+91.mp3,data\Audio\Non engine issue\91.mp3,Non engine issue,Non engine issue,True,0.107,0.8125,0.0805
+92.mp3,data\Audio\Non engine issue\92.mp3,Non engine issue,Non engine issue,True,0.2472698412698413,0.5827063492063493,0.1700238095238095
+93.mp3,data\Audio\Non engine issue\93.mp3,Non engine issue,Non engine issue,True,0.09672222222222222,0.8642777777777778,0.039
+94.mp3,data\Audio\Non engine issue\94.mp3,Non engine issue,Non engine issue,True,0.09009523809523809,0.8552380952380954,0.05466666666666667
+95.mp3,data\Audio\Non engine issue\95.mp3,Non engine issue,Non engine issue,True,0.1140392156862745,0.793389355742297,0.09257142857142857
+96.mp3,data\Audio\Non engine issue\96.mp3,Non engine issue,Non engine issue,True,0.20308585858585856,0.6392474747474748,0.15766666666666668
+97.mp3,data\Audio\Non engine issue\97.mp3,Non engine issue,Non engine issue,True,0.3149769230769231,0.5268666666666666,0.15815641025641022
+98.mp3,data\Audio\Non engine issue\98.mp3,Non engine issue,Non engine issue,True,0.04323333333333333,0.8392000000000001,0.11756666666666665
+99.mp3,data\Audio\Non engine issue\99.mp3,Non engine issue,Non engine issue,True,0.19607142857142862,0.6416666666666666,0.16226190476190475
+alarm-car-or-home-62554.mp3,data\Audio\Non engine issue\alarm-car-or-home-62554.mp3,Non engine issue,Non engine issue,True,0.26578174603174604,0.6195277777777778,0.1146904761904762
+bad-ball-joint-1.mp3,data\Audio\Non engine issue\bad-ball-joint-1.mp3,Non engine issue,Non engine issue,True,0.054833333333333345,0.8233452380952382,0.12182142857142857
+bad-battery.mp3,data\Audio\Non engine issue\bad-battery.mp3,Non engine issue,Engine Issue,False,0.39539635854341737,0.2511274509803922,0.3534761904761905
+brake-pad.mp3,data\Audio\Non engine issue\brake-pad.mp3,Non engine issue,Non engine issue,True,0.11199999999999999,0.631,0.257
+car-alarm-355144.mp3,data\Audio\Non engine issue\car-alarm-355144.mp3,Non engine issue,Non engine issue,True,0.17833333333333332,0.787,0.034666666666666665
+car-alarm-lights-switched-on-beeps-108306.mp3,data\Audio\Non engine issue\car-alarm-lights-switched-on-beeps-108306.mp3,Non engine issue,Non engine issue,True,0.07788888888888888,0.8361944444444444,0.08591666666666667
+car-alarm-mus-152-36202.mp3,data\Audio\Non engine issue\car-alarm-mus-152-36202.mp3,Non engine issue,Non engine issue,True,0.16935238095238095,0.7263785714285714,0.10426904761904764
+car-alarm-raw-43056.mp3,data\Audio\Non engine issue\car-alarm-raw-43056.mp3,Non engine issue,Non engine issue,True,0.21630952380952384,0.726,0.05769047619047619
+car-alarm-shorter-95503.mp3,data\Audio\Non engine issue\car-alarm-shorter-95503.mp3,Non engine issue,Non engine issue,True,0.2785,0.569952380952381,0.15154761904761904
+car-alarm-system-393085.mp3,data\Audio\Non engine issue\car-alarm-system-393085.mp3,Non engine issue,Non engine issue,True,0.11588888888888889,0.8207777777777778,0.06333333333333332
+car-chime-loop-1-206755.mp3,data\Audio\Non engine issue\car-chime-loop-1-206755.mp3,Non engine issue,Non engine issue,True,0.18711904761904763,0.7506785714285713,0.062202380952380946
+car-door-porter-beeps-muffled-75351.mp3,data\Audio\Non engine issue\car-door-porter-beeps-muffled-75351.mp3,Non engine issue,Non engine issue,True,0.029333333333333336,0.8563333333333333,0.11433333333333334
+car-engine-fail-356001 (1).mp3,data\Audio\Non engine issue\car-engine-fail-356001 (1).mp3,Non engine issue,Non engine issue,True,0.2805714285714286,0.6025952380952381,0.11683333333333332
+car-engine-ignition-fail-352768.mp3,data\Audio\Non engine issue\car-engine-ignition-fail-352768.mp3,Non engine issue,Non engine issue,True,0.13826190476190475,0.5865357142857143,0.275202380952381
+car-indicator-297268.mp3,data\Audio\Non engine issue\car-indicator-297268.mp3,Non engine issue,Non engine issue,True,0.11392857142857143,0.6983095238095237,0.1877619047619048
+car-seatbelt-alarm-86950.mp3,data\Audio\Non engine issue\car-seatbelt-alarm-86950.mp3,Non engine issue,Non engine issue,True,0.13183333333333333,0.7694166666666667,0.09875
+car-stopping-metal-to-metal.mp3,data\Audio\Non engine issue\car-stopping-metal-to-metal.mp3,Non engine issue,Non engine issue,True,0.10800000000000001,0.8022499999999999,0.08975
+car-turn-signal-blinker-left-and-right-105622.mp3,data\Audio\Non engine issue\car-turn-signal-blinker-left-and-right-105622.mp3,Non engine issue,Non engine issue,True,0.17182142857142857,0.6846785714285715,0.1435
+car-warning-sound-2-189737.mp3,data\Audio\Non engine issue\car-warning-sound-2-189737.mp3,Non engine issue,Non engine issue,True,0.3708690476190476,0.47759523809523813,0.15153571428571427
+distant-alarm-car-68377.mp3,data\Audio\Non engine issue\distant-alarm-car-68377.mp3,Non engine issue,Non engine issue,True,0.1804,0.75595,0.06365
+failed_car_start-27845.mp3,data\Audio\Non engine issue\failed_car_start-27845.mp3,Non engine issue,Non engine issue,True,0.10782291666666666,0.7743333333333333,0.11784374999999998
+failing-water-pump.mp3,data\Audio\Non engine issue\failing-water-pump.mp3,Non engine issue,Non engine issue,True,0.07370588235294118,0.8909607843137255,0.035333333333333335
+hole-in-muffler.mp3,data\Audio\Non engine issue\hole-in-muffler.mp3,Non engine issue,Non engine issue,True,0.12100000000000001,0.7623571428571428,0.11664285714285713
+lifter-adjustment.mp3,data\Audio\Non engine issue\lifter-adjustment.mp3,Non engine issue,Non engine issue,True,0.2915499797534513,0.6105257193786605,0.09792430086788814
+loose-heat-shield.mp3,data\Audio\Non engine issue\loose-heat-shield.mp3,Non engine issue,Non engine issue,True,0.18533333333333332,0.6753333333333333,0.13933333333333334
+mixkit-car-start-ignition-1559.mp3,data\Audio\Non engine issue\mixkit-car-start-ignition-1559.mp3,Non engine issue,Normal engine,False,0.06599726775956284,0.023476190476190477,0.9105265417642466
+mixkit-failed-car-ignition-1540.mp3,data\Audio\Non engine issue\mixkit-failed-car-ignition-1540.mp3,Non engine issue,Engine Issue,False,0.5258737446197991,0.21629411764705878,0.257832137733142
+obstruction-of-heater-fan.mp3,data\Audio\Non engine issue\obstruction-of-heater-fan.mp3,Non engine issue,Non engine issue,True,0.13549726775956286,0.5788333333333333,0.2856693989071038
+old-maruti-car-unlock-sound-keyless-entry-beep-327691.mp3,data\Audio\Non engine issue\old-maruti-car-unlock-sound-keyless-entry-beep-327691.mp3,Non engine issue,Non engine issue,True,0.19255555555555556,0.7805873015873016,0.026857142857142854
+open-car-door-372469.mp3,data\Audio\Non engine issue\open-car-door-372469.mp3,Non engine issue,Non engine issue,True,0.151,0.6133333333333333,0.23566666666666666
+radiator-boiling-water.mp3,data\Audio\Non engine issue\radiator-boiling-water.mp3,Non engine issue,Non engine issue,True,0.07883333333333334,0.7439999999999999,0.1771666666666667
+running-hole-exhaust.mp3,data\Audio\Non engine issue\running-hole-exhaust.mp3,Non engine issue,Non engine issue,True,0.14891666666666664,0.7571190476190476,0.09396428571428572
+sfx_seatbelt-warning_auto-80273.mp3,data\Audio\Non engine issue\sfx_seatbelt-warning_auto-80273.mp3,Non engine issue,Non engine issue,True,0.3475833333333334,0.44791666666666674,0.20450000000000002
+start-up-car-bad-exhaust.mp3,data\Audio\Non engine issue\start-up-car-bad-exhaust.mp3,Non engine issue,Non engine issue,True,0.05036363636363637,0.8145357142857143,0.13510064935064933
+starting-break-in-exhaust.mp3,data\Audio\Non engine issue\starting-break-in-exhaust.mp3,Non engine issue,Non engine issue,True,0.06036363636363637,0.8045357142857142,0.13510064935064933
+struts.mp3,data\Audio\Non engine issue\struts.mp3,Non engine issue,Non engine issue,True,0.16726190476190475,0.7148333333333333,0.1179047619047619
+trany-slipping.mp3,data\Audio\Non engine issue\trany-slipping.mp3,Non engine issue,Non engine issue,True,0.21962101237936196,0.5779607843137256,0.20241820330691251
+trying-to-start-car-with-dead-battery.mp3,data\Audio\Non engine issue\trying-to-start-car-with-dead-battery.mp3,Non engine issue,Normal engine,False,0.329687743950039,0.13502380952380952,0.5352884465261514
+vacuum-hose-leak.mp3,data\Audio\Non engine issue\vacuum-hose-leak.mp3,Non engine issue,Non engine issue,True,0.14440202966432475,0.7169523809523808,0.1386455893832943
+water-pump.mp3,data\Audio\Non engine issue\water-pump.mp3,Non engine issue,Non engine issue,True,0.09703921568627451,0.8696274509803922,0.03333333333333333
+wheel-well-dust-cover-breaking-off.mp3,data\Audio\Non engine issue\wheel-well-dust-cover-breaking-off.mp3,Non engine issue,Non engine issue,True,0.04833333333333333,0.7452777777777777,0.2063888888888889
+windscreen-wipers-30740.mp3,data\Audio\Non engine issue\windscreen-wipers-30740.mp3,Non engine issue,Non engine issue,True,0.14022222222222222,0.7702777777777777,0.08950000000000001
+worn-out-break-pad.mp3,data\Audio\Non engine issue\worn-out-break-pad.mp3,Non engine issue,Non engine issue,True,0.1156969696969697,0.6172023809523809,0.26710064935064937
+worn-out-serpintine-belt.mp3,data\Audio\Non engine issue\worn-out-serpintine-belt.mp3,Non engine issue,Non engine issue,True,0.050499999999999996,0.8786666666666666,0.07083333333333332
+001.mp3,data\Audio\Normal engine\001.mp3,Normal engine,Engine Issue,False,0.39457801358893674,0.36409826839826837,0.2413237180127949
+002.mp3,data\Audio\Normal engine\002.mp3,Normal engine,Normal engine,True,0.12740351775956285,0.4238095238095238,0.4487869584309134
+003.mp3,data\Audio\Normal engine\003.mp3,Normal engine,Engine Issue,False,0.6153737446197991,0.1517941176470588,0.23283213773314201
+004.mp3,data\Audio\Normal engine\004.mp3,Normal engine,Normal engine,True,0.11441666666666667,0.20619047619047617,0.6793928571428571
+005.mp3,data\Audio\Normal engine\005.mp3,Normal engine,Normal engine,True,0.04087573998178506,0.010277777777777776,0.9488464822404371
+006.mp3,data\Audio\Normal engine\006.mp3,Normal engine,Normal engine,True,0.05030431141035649,0.010420634920634919,0.9392750536690087
+007.mp3,data\Audio\Normal engine\007.mp3,Normal engine,Normal engine,True,0.10583060109289617,0.2508373015873016,0.6433320973198023
+008.mp3,data\Audio\Normal engine\008.mp3,Normal engine,Normal engine,True,0.08670907331511839,0.015611111111111109,0.8976798155737704
+009.mp3,data\Audio\Normal engine\009.mp3,Normal engine,Normal engine,True,0.19427978763188725,0.0378749257278669,0.7678452866402459
+010.mp3,data\Audio\Normal engine\010.mp3,Normal engine,Normal engine,True,0.027820184426229508,0.14639285714285713,0.8257869584309134
+011.mp3,data\Audio\Normal engine\011.mp3,Normal engine,Normal engine,True,0.13954435639645602,0.09871475256769374,0.7617408910358502
+012.mp3,data\Audio\Normal engine\012.mp3,Normal engine,Non engine issue,False,0.10320113680718189,0.4663095238095238,0.43048933938329426
+013.mp3,data\Audio\Normal engine\013.mp3,Normal engine,Normal engine,True,0.1075424066484517,0.07792063492063492,0.8145369584309131
+014.mp3,data\Audio\Normal engine\014.mp3,Normal engine,Normal engine,True,0.28155158730158725,0.10837301587301587,0.6100753968253967
+015.mp3,data\Audio\Normal engine\015.mp3,Normal engine,Normal engine,True,0.10158482142857145,0.2154761904761905,0.6829389880952381
+016.mp3,data\Audio\Normal engine\016.mp3,Normal engine,Normal engine,True,0.03732018442622951,0.027142857142857146,0.9355369584309134
+017.mp3,data\Audio\Normal engine\017.mp3,Normal engine,Normal engine,True,0.07914037698412699,0.05208730158730159,0.8687723214285714
+018.mp3,data\Audio\Normal engine\018.mp3,Normal engine,Normal engine,True,0.1612777777777778,0.16621825396825393,0.6725039682539681
+019.mp3,data\Audio\Normal engine\019.mp3,Normal engine,Normal engine,True,0.11606377416981925,0.09016666666666666,0.7937695591635141
+020.mp3,data\Audio\Normal engine\020.mp3,Normal engine,Normal engine,True,0.10048685109289618,0.126,0.773513148907104
+021.mp3,data\Audio\Normal engine\021.mp3,Normal engine,Normal engine,True,0.0003201844262295082,0.00014285714285714284,0.9995369584309134
+022.mp3,data\Audio\Normal engine\022.mp3,Normal engine,Normal engine,True,0.0003201844262295082,0.00014285714285714284,0.9995369584309134
+023.mp3,data\Audio\Normal engine\023.mp3,Normal engine,Normal engine,True,0.0663201844262295,0.016142857142857143,0.9175369584309133
+024.mp3,data\Audio\Normal engine\024.mp3,Normal engine,Normal engine,True,0.07832018442622951,0.020142857142857143,0.9015369584309134
+025.mp3,data\Audio\Normal engine\025.mp3,Normal engine,Normal engine,True,0.0866193297253748,0.010611111111111111,0.9027695591635141
+026.mp3,data\Audio\Normal engine\026.mp3,Normal engine,Normal engine,True,0.1950392156862745,0.1587941176470588,0.6461666666666668
+027.mp3,data\Audio\Normal engine\027.mp3,Normal engine,Normal engine,True,0.024563774169819252,0.029642857142857144,0.9457933686873237
+028.mp3,data\Audio\Normal engine\028.mp3,Normal engine,Normal engine,True,0.04651988636363637,0.06864285714285714,0.8848372564935064
+029.mp3,data\Audio\Normal engine\029.mp3,Normal engine,Normal engine,True,0.1400898490806579,0.09207189542483661,0.7678382554945056
+030.mp3,data\Audio\Normal engine\030.mp3,Normal engine,Normal engine,True,0.0003201844262295082,0.00014285714285714284,0.9995369584309134
+031.mp3,data\Audio\Normal engine\031.mp3,Normal engine,Normal engine,True,0.07814037698412699,0.024087301587301588,0.8977723214285716
+032.mp3,data\Audio\Normal engine\032.mp3,Normal engine,Normal engine,True,0.260640376984127,0.19787301587301584,0.5414866071428572
+033.mp3,data\Audio\Normal engine\033.mp3,Normal engine,Normal engine,True,0.1448888888888889,0.09927777777777778,0.7558333333333335
+034.mp3,data\Audio\Normal engine\034.mp3,Normal engine,Normal engine,True,0.07765351775956283,0.021809523809523806,0.9005369584309135
+035.mp3,data\Audio\Normal engine\035.mp3,Normal engine,Normal engine,True,0.00965625,0.054642857142857146,0.9357008928571429
+036.mp3,data\Audio\Normal engine\036.mp3,Normal engine,Normal engine,True,0.09909250585480095,0.033761904761904764,0.8671455893832944
+037.mp3,data\Audio\Normal engine\037.mp3,Normal engine,Normal engine,True,0.11583333333333332,0.1721468253968254,0.7120198412698413
+038.mp3,data\Audio\Normal engine\038.mp3,Normal engine,Normal engine,True,0.1770171541231992,0.21275541125541128,0.6102274346213896
+039.mp3,data\Audio\Normal engine\039.mp3,Normal engine,Non engine issue,False,0.3061892156862745,0.4474941176470588,0.24631666666666663
+040.mp3,data\Audio\Normal engine\040.mp3,Normal engine,Normal engine,True,0.08756377416981925,0.025142857142857144,0.8872933686873238
+041.mp3,data\Audio\Normal engine\041.mp3,Normal engine,Normal engine,True,0.148843993950039,0.11666666666666665,0.7344893393832943
+042.mp3,data\Audio\Normal engine\042.mp3,Normal engine,Normal engine,True,0.1774677871148459,0.17879411764705883,0.6437380952380951
+043.mp3,data\Audio\Normal engine\043.mp3,Normal engine,Normal engine,True,0.08436780347384856,0.17476190476190476,0.7408702917642467
+044.mp3,data\Audio\Normal engine\044.mp3,Normal engine,Non engine issue,False,0.14148494123804514,0.5157941176470588,0.342720941114896
+11the-car-engine-settling-netmogp3.mp3,data\Audio\Normal engine\11the-car-engine-settling-netmogp3.mp3,Normal engine,Normal engine,True,0.13889161299765806,0.0015714285714285715,0.8595369584309134
+1980-nissan-sunny-14-litr-5fyfmmpm.mp3,data\Audio\Normal engine\1980-nissan-sunny-14-litr-5fyfmmpm.mp3,Normal engine,Normal engine,True,0.055320184426229504,0.010142857142857143,0.9345369584309133
+4g93-na-twincam-engine-so-kw5bqvbt.mp3,data\Audio\Normal engine\4g93-na-twincam-engine-so-kw5bqvbt.mp3,Normal engine,Normal engine,True,0.1310701844262295,0.07330952380952381,0.7956202917642464
+59.mp3,data\Audio\Normal engine\59.mp3,Normal engine,Normal engine,True,0.08266666666666668,0.228452380952381,0.6888809523809524
+60.mp3,data\Audio\Normal engine\60.mp3,Normal engine,Normal engine,True,0.10157936507936509,0.16073015873015872,0.7376904761904761
+61.mp3,data\Audio\Normal engine\61.mp3,Normal engine,Normal engine,True,0.08734126984126984,0.14511111111111108,0.7675476190476189
+62.mp3,data\Audio\Normal engine\62.mp3,Normal engine,Normal engine,True,0.07428571428571429,0.2672142857142857,0.6585
+63.mp3,data\Audio\Normal engine\63.mp3,Normal engine,Non engine issue,False,0.18176812801418255,0.5396909430438843,0.2785409289419333
+64.mp3,data\Audio\Normal engine\64.mp3,Normal engine,Non engine issue,False,0.20562150796756248,0.40290825906120026,0.3914702329712373
+65.mp3,data\Audio\Normal engine\65.mp3,Normal engine,Normal engine,True,0.27631746031746035,0.12561111111111112,0.5980714285714285
+66.mp3,data\Audio\Normal engine\66.mp3,Normal engine,Normal engine,True,0.06622222222222222,0.2100634920634921,0.7237142857142856
+67.mp3,data\Audio\Normal engine\67.mp3,Normal engine,Normal engine,True,0.1290238095238095,0.25845238095238093,0.6125238095238095
+68.mp3,data\Audio\Normal engine\68.mp3,Normal engine,Normal engine,True,0.04591919191919192,0.14124747474747473,0.8128333333333333
+69.mp3,data\Audio\Normal engine\69.mp3,Normal engine,Normal engine,True,0.21504715219421097,0.12790522875816993,0.657047619047619
+70.mp3,data\Audio\Normal engine\70.mp3,Normal engine,Normal engine,True,0.11528571428571428,0.4337142857142857,0.451
+71.mp3,data\Audio\Normal engine\71.mp3,Normal engine,Normal engine,True,0.15323937634542142,0.09786652236652235,0.7488941012880561
+a-2-seconds-loopable-mode-g4eystqd.mp3,data\Audio\Normal engine\a-2-seconds-loopable-mode-g4eystqd.mp3,Normal engine,Normal engine,True,0.033826281987205116,0.0425,0.9236737180127949
+a-suzuki-swift-13-2008-fnhgtta6.mp3,data\Audio\Normal engine\a-suzuki-swift-13-2008-fnhgtta6.mp3,Normal engine,Normal engine,True,0.18333333333333332,0.04716666666666667,0.7694999999999999
+car-burnout-tried-squeal--t2z3s36q.mp3,data\Audio\Normal engine\car-burnout-tried-squeal--t2z3s36q.mp3,Normal engine,Normal engine,True,0.08333333333333334,0.333952380952381,0.5827142857142856
+car-engine-335601.mp3,data\Audio\Normal engine\car-engine-335601.mp3,Normal engine,Normal engine,True,0.02265351775956284,0.1500595238095238,0.8272869584309135
+car-engine-372477.mp3,data\Audio\Normal engine\car-engine-372477.mp3,Normal engine,Normal engine,True,0.08787573998178506,0.043420634920634915,0.8687036250975799
+car-engine-noise-321224.mp3,data\Audio\Normal engine\car-engine-noise-321224.mp3,Normal engine,Normal engine,True,0.17198685109289616,0.13688095238095238,0.6911321965261514
+car-engine-revving-94831.mp3,data\Audio\Normal engine\car-engine-revving-94831.mp3,Normal engine,Normal engine,True,0.13366666666666668,0.13266666666666668,0.7336666666666667
+car-engine-roaring-376881.mp3,data\Audio\Normal engine\car-engine-roaring-376881.mp3,Normal engine,Normal engine,True,0.08226190476190476,0.1312380952380952,0.7865000000000001
+car-engine-sound-loop-nyglalqv.mp3,data\Audio\Normal engine\car-engine-sound-loop-nyglalqv.mp3,Normal engine,Normal engine,True,0.13715351775956283,0.07483333333333334,0.7880131489071038
+car-engine-start-44357.mp3,data\Audio\Normal engine\car-engine-start-44357.mp3,Normal engine,Normal engine,True,0.08670907331511839,0.015611111111111109,0.8976798155737704
+car-engine-start-5kmoleti.mp3,data\Audio\Normal engine\car-engine-start-5kmoleti.mp3,Normal engine,Normal engine,True,0.1584854505326721,0.08957983193277311,0.751934717534555
+car-engine-start-sfx-with-ixlzd3aw.mp3,data\Audio\Normal engine\car-engine-start-sfx-with-ixlzd3aw.mp3,Normal engine,Normal engine,True,0.24809523809523806,0.14214285714285713,0.6097619047619047
+car-engine-start-xamdaaq3.mp3,data\Audio\Normal engine\car-engine-start-xamdaaq3.mp3,Normal engine,Normal engine,True,0.21085048745653254,0.01377922077922078,0.7753702917642468
+car-engine-starting-fse55vba.mp3,data\Audio\Normal engine\car-engine-starting-fse55vba.mp3,Normal engine,Normal engine,True,0.16604488680718188,0.049261904761904764,0.7846932084309133
+car-ignition-2.mp3,data\Audio\Normal engine\car-ignition-2.mp3,Normal engine,Normal engine,True,0.14838888888888888,0.09744444444444443,0.7541666666666665
+car-motor-revving-99317.mp3,data\Audio\Normal engine\car-motor-revving-99317.mp3,Normal engine,Normal engine,True,0.015320184426229509,0.022142857142857145,0.9625369584309134
+create-the-sound-of-a-vh5bgza5.mp3,data\Audio\Normal engine\create-the-sound-of-a-vh5bgza5.mp3,Normal engine,Normal engine,True,0.14762374461979916,0.17557983193277313,0.6767964234474276
+drift-car-engine-steady-7-3z3da65a.mp3,data\Audio\Normal engine\drift-car-engine-steady-7-3z3da65a.mp3,Normal engine,Normal engine,True,0.12083060109289619,0.028309523809523805,0.8508598750975801
+engine-6000.mp3,data\Audio\Normal engine\engine-6000.mp3,Normal engine,Normal engine,True,0.09349726775956285,0.13776190476190478,0.7687408274785323
+generate-a-short-engine-c-vaxsww3g.mp3,data\Audio\Normal engine\generate-a-short-engine-c-vaxsww3g.mp3,Normal engine,Normal engine,True,0.20574776334776337,0.15294747474747475,0.6413047619047618
+high-performance-sports-c-exhm3dyh.mp3,data\Audio\Normal engine\high-performance-sports-c-exhm3dyh.mp3,Normal engine,Normal engine,True,0.16016393442622948,0.26492857142857146,0.5749074941451991
+i-need-normal--a-uxqwk3dq.mp3,data\Audio\Normal engine\i-need-normal--a-uxqwk3dq.mp3,Normal engine,Normal engine,True,0.14833060109289617,0.12111111111111111,0.7305582877959926
+i-need-normal-car-idle-a2dcbd2k.mp3,data\Audio\Normal engine\i-need-normal-car-idle-a2dcbd2k.mp3,Normal engine,Normal engine,True,0.1353333333333333,0.10326190476190476,0.7614047619047619
+loop-car-engine-sound-for-bsaponsh.mp3,data\Audio\Normal engine\loop-car-engine-sound-for-bsaponsh.mp3,Normal engine,Normal engine,True,0.07041005370727527,0.04140522875816993,0.8881847175345549
+loop-car-engine-sound-mor-hbrntvta.mp3,data\Audio\Normal engine\loop-car-engine-sound-mor-hbrntvta.mp3,Normal engine,Normal engine,True,0.09529488680718189,0.09626190476190474,0.8084432084309132
+loop-car-engine-sound-mor-kdukfqpt.mp3,data\Audio\Normal engine\loop-car-engine-sound-mor-kdukfqpt.mp3,Normal engine,Normal engine,True,0.03870907331511839,0.18458730158730158,0.7767036250975801
+looping-sound-of-a-runnin-rdxitwpb.mp3,data\Audio\Normal engine\looping-sound-of-a-runnin-rdxitwpb.mp3,Normal engine,Normal engine,True,0.19779914529914527,0.03142063492063492,0.7707802197802198
+mixkit-car-engine-start-1566.wav,data\Audio\Normal engine\mixkit-car-engine-start-1566.wav,Normal engine,Normal engine,True,0.12958482142857142,0.11649999999999999,0.7539151785714285
+mixkit-car-ignition-1535.wav,data\Audio\Normal engine\mixkit-car-ignition-1535.wav,Normal engine,Normal engine,True,0.1616528035049031,0.09865667175961294,0.739690524735484
+mixkit-car-start-ignition-1559.wav,data\Audio\Normal engine\mixkit-car-start-ignition-1559.wav,Normal engine,Normal engine,True,0.0623609041231992,0.023476190476190477,0.9141629054006104
+mixkit-cars-starting-1561.wav,data\Audio\Normal engine\mixkit-cars-starting-1561.wav,Normal engine,Normal engine,True,0.03732018442622951,0.025142857142857144,0.9375369584309134
+mixkit-motocross-motorcycle-engine-2727.mp3,data\Audio\Normal engine\mixkit-motocross-motorcycle-engine-2727.mp3,Normal engine,Engine Issue,False,0.5024227642276422,0.12728571428571428,0.37029152148664346
+mixkit-motorcycle-engine-doing-gearshift-2725.mp3,data\Audio\Normal engine\mixkit-motorcycle-engine-doing-gearshift-2725.mp3,Normal engine,Normal engine,True,0.17918376068376068,0.1593968253968254,0.6614194139194138
+modern-nissan-gtr-nismo-e-yfgi6u7u.mp3,data\Audio\Normal engine\modern-nissan-gtr-nismo-e-yfgi6u7u.mp3,Normal engine,Normal engine,True,0.08115351775956285,0.005142857142857143,0.91370362509758
+muscle-car-engine-idling-437781.mp3,data\Audio\Normal engine\muscle-car-engine-idling-437781.mp3,Normal engine,Normal engine,True,0.24539635854341735,0.20262745098039217,0.5519761904761906
+muscle-car-v8-start-idle-with-revs-away(fromnoisetosound.com).mp3,data\Audio\Normal engine\muscle-car-v8-start-idle-with-revs-away(fromnoisetosound.com).mp3,Normal engine,Normal engine,True,0.23366666666666663,0.3225357142857142,0.44379761904761905
+oo73jzdzfnd-car-revving-sfx-0.mp3,data\Audio\Normal engine\oo73jzdzfnd-car-revving-sfx-0.mp3,Normal engine,Normal engine,True,0.325,0.28383333333333327,0.39116666666666666
+race-car-engine-5000-rpm-6sx2umqj.mp3,data\Audio\Normal engine\race-car-engine-5000-rpm-6sx2umqj.mp3,Normal engine,Normal engine,True,0.18305555555555553,0.07627777777777776,0.7406666666666666
+sports-car-start-and-rev-engine(fromnoisetosound.com).mp3,data\Audio\Normal engine\sports-car-start-and-rev-engine(fromnoisetosound.com).mp3,Normal engine,Normal engine,True,0.028055555555555552,0.09269444444444445,0.87925
+start-engine-toyota-2jz-g-hikyh3jw.mp3,data\Audio\Normal engine\start-engine-toyota-2jz-g-hikyh3jw.mp3,Normal engine,Normal engine,True,0.07806377416981924,0.010142857142857143,0.9117933686873236
+straight-piped-inline-6-e-o7rxg5vc.mp3,data\Audio\Normal engine\straight-piped-inline-6-e-o7rxg5vc.mp3,Normal engine,Normal engine,True,0.051986851092896164,0.006809523809523809,0.9412036250975799
+the-sound-of-the-mercedes-pl446tfx.mp3,data\Audio\Normal engine\the-sound-of-the-mercedes-pl446tfx.mp3,Normal engine,Engine Issue,False,0.5298388278388279,0.22333333333333333,0.24682783882783885
+tuned-20-litre-1980-bmw-bxxi7kyi.mp3,data\Audio\Normal engine\tuned-20-litre-1980-bmw-bxxi7kyi.mp3,Normal engine,Normal engine,True,0.13648685109289618,0.010476190476190477,0.8530369584309133
+very-old-car-engine-idlin-er73lnaj.mp3,data\Audio\Normal engine\very-old-car-engine-idlin-er73lnaj.mp3,Normal engine,Normal engine,True,0.19440476190476189,0.10976190476190477,0.6958333333333334
+volvo-engine-431665.mp3,data\Audio\Normal engine\volvo-engine-431665.mp3,Normal engine,Normal engine,True,0.20474531749137198,0.09954159239453356,0.6957130901140944
+vw-golf-mk4-28-vr6-evc3k3fa.mp3,data\Audio\Normal engine\vw-golf-mk4-28-vr6-evc3k3fa.mp3,Normal engine,Normal engine,True,0.030320184426229507,0.045142857142857144,0.9245369584309134
