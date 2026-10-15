@@ -1,0 +1,28 @@
+{
+  "experiment": "uncertainty_referral",
+  "model": "Random Forest",
+  "random_state": 42,
+  "duplicate_rows_removed": 1,
+  "split_sizes": {
+    "train": 39198,
+    "validation": 8400,
+    "test": 8400
+  },
+  "minimum_validation_coverage": 0.7,
+  "score_warning": "Random Forest class-vote proportions are not assumed to be calibrated probabilities.",
+  "evaluation_warning": "Stratified random split; generalization to unseen runs is not established without suitable run/session identifiers.",
+  "selected_thresholds": {
+    "confidence": {
+      "rule": "confidence",
+      "threshold": 0.5675,
+      "validation_coverage": 0.7041666666666667,
+      "validation_accepted_accuracy": 0.855621301775148
+    },
+    "margin": {
+      "rule": "margin",
+      "threshold": 0.12999999999999995,
+      "validation_coverage": 0.7060714285714286,
+      "validation_accepted_accuracy": 0.855167762603271
+    }
+  }
+}
