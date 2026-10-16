@@ -1,0 +1,16 @@
+EnginePulse Tuned SVM
+=====================
+Best parameters: {'svm__C': 100, 'svm__gamma': 'scale'}
+Best CV macro F1: 0.5913
+Test accuracy: 0.6167
+Test macro F1: 0.6120
+
+                  precision    recall  f1-score   support
+
+    Engine Issue       0.59      0.59      0.59        17
+Non engine issue       0.59      0.73      0.65        22
+   Normal engine       0.69      0.52      0.59        21
+
+        accuracy                           0.62        60
+       macro avg       0.62      0.61      0.61        60
+    weighted avg       0.62      0.62      0.61        60

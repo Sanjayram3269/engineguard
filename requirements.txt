@@ -3,3 +3,6 @@ pandas==3.0.6
 scipy==1.17.1
 scikit-learn==1.9.1
 joblib==1.6.0
+librosa==1.0.0
+matplotlib
+soundfile

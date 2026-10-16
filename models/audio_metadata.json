@@ -1,0 +1,60 @@
+{
+  "module": "audio",
+  "task": "engine audio classification",
+  "classes": ["Engine Issue", "Non engine issue", "Normal engine"],
+  "selected_inference_model": "models/audio/audio_random_forest_tuned.joblib",
+  "selected_inference_model_type": "sklearn.pipeline.Pipeline",
+  "selected_inference_model_steps": ["rf"],
+  "selected_inference_model_n_features": 26,
+  "feature_schema": {
+    "description": "MFCC mean and standard deviation per coefficient",
+    "extraction": {
+      "library": "librosa",
+      "sample_rate_hz": 22050,
+      "mono": true,
+      "n_mfcc": 13,
+      "n_fft": 2048,
+      "hop_length": 512
+    },
+    "feature_names": [
+      "mfcc_1_mean", "mfcc_1_std",
+      "mfcc_2_mean", "mfcc_2_std",
+      "mfcc_3_mean", "mfcc_3_std",
+      "mfcc_4_mean", "mfcc_4_std",
+      "mfcc_5_mean", "mfcc_5_std",
+      "mfcc_6_mean", "mfcc_6_std",
+      "mfcc_7_mean", "mfcc_7_std",
+      "mfcc_8_mean", "mfcc_8_std",
+      "mfcc_9_mean", "mfcc_9_std",
+      "mfcc_10_mean", "mfcc_10_std",
+      "mfcc_11_mean", "mfcc_11_std",
+      "mfcc_12_mean", "mfcc_12_std",
+      "mfcc_13_mean", "mfcc_13_std"
+    ],
+    "feature_count": 26
+  },
+  "dataset": {
+    "path": "data/Audio",
+    "categories": ["Engine Issue", "Non engine issue", "Normal engine"],
+    "total_recordings": 297,
+    "counts": {"Engine Issue": 85, "Non engine issue": 106, "Normal engine": 106}
+  },
+  "score_semantics": {
+    "confidence_type": "random_forest_class_fraction",
+    "note": "Model scores are not calibrated probabilities. Treat them as relative confidence only."
+  },
+  "limitations": [
+    "Three-way audio classification only; does not map to specific mechanical faults.",
+    "Audio models were trained on a fixed MFCC feature schema; changing extraction parameters invalidates the model.",
+    "Dataset is a small collected sample; generalization to unseen engines/recording conditions is not established.",
+    "This metadata documents the repo artifacts; it is not an independent evaluation report."
+  ],
+  "repo_model_artifacts": [
+    "models/audio/audio_random_forest_tuned.joblib",
+    "models/audio/audio_random_forest.joblib",
+    "models/audio/audio_svm_model.joblib",
+    "models/audio/audio_svm_tuned.joblib",
+    "models/audio/audio_svm_tuned_v2.joblib",
+    "models/audio/audio_extra_trees_tuned.joblib"
+  ]
+}

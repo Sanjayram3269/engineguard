@@ -1,0 +1,61 @@
+filename,label,path,predicted_label,correct
+alarm-car-or-home-62554.mp3,Non engine issue,data\Audio\Non engine issue\alarm-car-or-home-62554.mp3,Non engine issue,True
+ssstik.io_1764467254685.mp3,Engine Issue,data\Audio\Engine Issue\ssstik.io_1764467254685.mp3,Engine Issue,True
+002.mp3,Engine Issue,data\Audio\Engine Issue\002.mp3,Engine Issue,True
+11.mp3,Engine Issue,data\Audio\Engine Issue\11.mp3,Engine Issue,True
+ssstik.io_1764467888243.mp3,Engine Issue,data\Audio\Engine Issue\ssstik.io_1764467888243.mp3,Engine Issue,True
+engine-seizing-up.mp3,Engine Issue,data\Audio\Engine Issue\engine-seizing-up.mp3,Normal engine,False
+mixkit-failed-car-ignition-1540.mp3,Non engine issue,data\Audio\Non engine issue\mixkit-failed-car-ignition-1540.mp3,Engine Issue,False
+old-broken-engine.mp3,Engine Issue,data\Audio\Engine Issue\old-broken-engine.mp3,Engine Issue,True
+67.mp3,Normal engine,data\Audio\Normal engine\67.mp3,Normal engine,True
+19.mp3,Engine Issue,data\Audio\Engine Issue\19.mp3,Engine Issue,True
+65.mp3,Normal engine,data\Audio\Normal engine\65.mp3,Normal engine,True
+010.mp3,Non engine issue,data\Audio\Non engine issue\010.mp3,Non engine issue,True
+starting-break-in-exhaust.mp3,Non engine issue,data\Audio\Non engine issue\starting-break-in-exhaust.mp3,Non engine issue,True
+002.mp3,Normal engine,data\Audio\Normal engine\002.mp3,Engine Issue,False
+63.mp3,Normal engine,data\Audio\Normal engine\63.mp3,Non engine issue,False
+69.mp3,Normal engine,data\Audio\Normal engine\69.mp3,Engine Issue,False
+1982-chevy-squarebody-fail-start-422887 (1).mp3,Non engine issue,data\Audio\Non engine issue\1982-chevy-squarebody-fail-start-422887 (1).mp3,Non engine issue,True
+mixkit-car-start-ignition-1559.mp3,Non engine issue,data\Audio\Non engine issue\mixkit-car-start-ignition-1559.mp3,Normal engine,False
+64.mp3,Normal engine,data\Audio\Normal engine\64.mp3,Engine Issue,False
+012.mp3,Normal engine,data\Audio\Normal engine\012.mp3,Non engine issue,False
+009.mp3,Non engine issue,data\Audio\Non engine issue\009.mp3,Non engine issue,True
+006.mp3,Non engine issue,data\Audio\Non engine issue\006.mp3,Non engine issue,True
+bad-battery.mp3,Non engine issue,data\Audio\Non engine issue\bad-battery.mp3,Engine Issue,False
+101.mp3,Non engine issue,data\Audio\Non engine issue\101.mp3,Engine Issue,False
+044.mp3,Normal engine,data\Audio\Normal engine\044.mp3,Non engine issue,False
+04.mp3,Engine Issue,data\Audio\Engine Issue\04.mp3,Engine Issue,True
+052166_car-lights-ding-81631.mp3,Non engine issue,data\Audio\Non engine issue\052166_car-lights-ding-81631.mp3,Non engine issue,True
+039.mp3,Normal engine,data\Audio\Normal engine\039.mp3,Non engine issue,False
+41.mp3,Engine Issue,data\Audio\Engine Issue\41.mp3,Engine Issue,True
+001.mp3,Normal engine,data\Audio\Normal engine\001.mp3,Engine Issue,False
+ssstik.io_1764468029713.mp3,Engine Issue,data\Audio\Engine Issue\ssstik.io_1764468029713.mp3,Non engine issue,False
+the-sound-of-the-mercedes-pl446tfx.mp3,Normal engine,data\Audio\Normal engine\the-sound-of-the-mercedes-pl446tfx.mp3,Engine Issue,False
+looping-sound-of-a-runnin-rdxitwpb.mp3,Normal engine,data\Audio\Normal engine\looping-sound-of-a-runnin-rdxitwpb.mp3,Normal engine,True
+10.mp3,Engine Issue,data\Audio\Engine Issue\10.mp3,Engine Issue,True
+ssstik.io_1764468111100.mp3,Engine Issue,data\Audio\Engine Issue\ssstik.io_1764468111100.mp3,Non engine issue,False
+car-engine-start-44357.mp3,Normal engine,data\Audio\Normal engine\car-engine-start-44357.mp3,Normal engine,True
+sfx_seatbelt-warning_auto-80273.mp3,Non engine issue,data\Audio\Non engine issue\sfx_seatbelt-warning_auto-80273.mp3,Non engine issue,True
+003.mp3,Normal engine,data\Audio\Normal engine\003.mp3,Engine Issue,False
+car-alarm-shorter-95503.mp3,Non engine issue,data\Audio\Non engine issue\car-alarm-shorter-95503.mp3,Non engine issue,True
+97.mp3,Non engine issue,data\Audio\Non engine issue\97.mp3,Engine Issue,False
+worn-out-break-pad.mp3,Non engine issue,data\Audio\Non engine issue\worn-out-break-pad.mp3,Non engine issue,True
+mixkit-motocross-motorcycle-engine-2727.mp3,Normal engine,data\Audio\Normal engine\mixkit-motocross-motorcycle-engine-2727.mp3,Engine Issue,False
+muscle-car-v8-start-idle-with-revs-away(fromnoisetosound.com).mp3,Normal engine,data\Audio\Normal engine\muscle-car-v8-start-idle-with-revs-away(fromnoisetosound.com).mp3,Normal engine,True
+82.mp3,Non engine issue,data\Audio\Non engine issue\82.mp3,Engine Issue,False
+car-warning-sound-2-189737.mp3,Non engine issue,data\Audio\Non engine issue\car-warning-sound-2-189737.mp3,Non engine issue,True
+003.mp3,Engine Issue,data\Audio\Engine Issue\003.mp3,Engine Issue,True
+034.mp3,Non engine issue,data\Audio\Non engine issue\034.mp3,Non engine issue,True
+13.mp3,Engine Issue,data\Audio\Engine Issue\13.mp3,Engine Issue,True
+70.mp3,Normal engine,data\Audio\Normal engine\70.mp3,Normal engine,True
+trying-to-start-car-with-dead-battery.mp3,Non engine issue,data\Audio\Non engine issue\trying-to-start-car-with-dead-battery.mp3,Normal engine,False
+012.mp3,Non engine issue,data\Audio\Non engine issue\012.mp3,Engine Issue,False
+016.mp3,Non engine issue,data\Audio\Non engine issue\016.mp3,Engine Issue,False
+001.mp3,Non engine issue,data\Audio\Non engine issue\001.mp3,Non engine issue,True
+the-sound-of-a-broken-car-engine.mp3,Engine Issue,data\Audio\Engine Issue\the-sound-of-a-broken-car-engine.mp3,Normal engine,False
+019.mp3,Normal engine,data\Audio\Normal engine\019.mp3,Normal engine,True
+oo73jzdzfnd-car-revving-sfx-0.mp3,Normal engine,data\Audio\Normal engine\oo73jzdzfnd-car-revving-sfx-0.mp3,Non engine issue,False
+high-performance-sports-c-exhm3dyh.mp3,Normal engine,data\Audio\Normal engine\high-performance-sports-c-exhm3dyh.mp3,Normal engine,True
+27.mp3,Engine Issue,data\Audio\Engine Issue\27.mp3,Engine Issue,True
+42.mp3,Engine Issue,data\Audio\Engine Issue\42.mp3,Engine Issue,True
+032.mp3,Normal engine,data\Audio\Normal engine\032.mp3,Normal engine,True

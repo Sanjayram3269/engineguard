@@ -140,3 +140,51 @@ schemas.
   before they are represented as validated system capabilities.
 - Do not use these outputs as a substitute for qualified mechanical
   inspection or safety-critical decisions.
+
+## 5. Engine audio classification
+
+**Module:** Engine audio classification (three-way classification of engine
+recordings).
+
+**Classes:** `Engine Issue`, `Non engine issue`, `Normal engine`.
+
+**Inference entry point:** `src/audio_inference.py`, loading
+`models/audio/audio_random_forest_tuned.joblib`.
+
+**Feature schema:** 26 MFCC features (`mfcc_1_mean` / `mfcc_1_std` through
+`mfcc_13_mean` / `mfcc_13_std`), extracted with librosa at 22050 Hz mono,
+`n_mfcc=13`, `n_fft=2048`, `hop_length=512`.
+
+**Model metadata:** `models/audio_metadata.json`.
+
+**Audio dataset:** recordings under `data/Audio/` in three category folders:
+`Engine Issue`, `Non engine issue`, `Normal engine`. The audio dataset is a
+separate collected sample and is not the same data or taxonomy as the tabular
+EngineFaultDB dataset used by the telemetry classifier.
+
+**Running audio inference from the repository root:**
+
+```powershell
+python -m pip install -r requirements.txt
+python .\src\audio_inference.py ".\data\Audio\Normal engine\002.mp3"
+```
+
+**Audio smoke test:**
+
+```powershell
+python -m src.test_audio_inference
+```
+
+The smoke test loads the real audio model and predicts on a real recording. It
+is not an independent accuracy evaluation.
+
+**Limitations:** audio scores are not calibrated probabilities, the dataset is
+small, and this module does not map to specific mechanical faults. Integration
+with the telemetry and vibration modules and the React frontend is pending.
+
+## 6. Frontend
+
+A React frontend is provided on the `ui` branch. It is currently rule-based
+simulation for demonstration and is not wired to the real inference models.
+
+See the `ui` branch for the frontend source and build instructions.

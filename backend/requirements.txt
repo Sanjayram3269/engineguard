@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+joblib
+numpy
+pandas
+scipy
+scikit-learn
+librosa
+matplotlib
+soundfile
