@@ -1,0 +1,3 @@
+split,accuracy,macro_f1,train_rows,test_rows
+Ordered within each class,0.7321428571428571,0.7417695584979275,47598,8400
+Stratified random,0.753452380952381,0.7614547956857685,47598,8400

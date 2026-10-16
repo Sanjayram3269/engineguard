@@ -1,0 +1,5 @@
+,Predicted 0 - Normal,Predicted 1 - Rich mixture,Predicted 2 - Lean mixture,Predicted 3 - Low voltage
+Actual 0 - Normal,1736,0,648,16
+Actual 1 - Rich mixture,0,1651,0,0
+Actual 2 - Lean mixture,0,0,1360,890
+Actual 3 - Low voltage,0,0,1331,769

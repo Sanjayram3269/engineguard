@@ -1,0 +1,15 @@
+{
+  "experiment": "production_style_referral_validation",
+  "model": "Random Forest",
+  "random_state": 42,
+  "duplicate_rows_removed": 1,
+  "threshold_selection": {
+    "threshold": 0.5675,
+    "validation_coverage": 0.7041666666666667,
+    "validation_accepted_accuracy": 0.855621301775148
+  },
+  "test_is_used_for_threshold_selection": false,
+  "training_procedure": "Fit on training + validation; evaluate on held-out test",
+  "confidence_warning": "Maximum Random Forest class-vote proportion; not a calibrated probability of correctness.",
+  "split_warning": "Stratified random split; generalization to unseen runs is not established without run/session identifiers."
+}

@@ -1,0 +1,3 @@
+model,validation_macro_f1,validation_accuracy,training_seconds
+Random Forest,0.5625717034281071,0.5593523038456959,3.42
+XGBoost,0.46415605698481793,0.48220026193594473,2.078
