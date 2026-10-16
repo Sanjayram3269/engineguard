@@ -32,7 +32,7 @@ Python 3.11 was used during development.
 
 ```powershell
 python -m venv .venv
-.\\.venv\\Scripts\\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 ```
 
@@ -118,7 +118,7 @@ The audio model provides three-way audio classification only; it does not identi
 ## Useful checks
 
 ```powershell
-python .\\src\\test_vibration_inference.py
+python .\src\test_vibration_inference.py
 python -m src.test_audio_inference
 ```
 
