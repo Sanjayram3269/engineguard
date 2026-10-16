@@ -1,0 +1,52 @@
+{
+  "split": {
+    "train_rows": 15628,
+    "test_rows": 3907,
+    "test_size": 0.2,
+    "random_state": 42,
+    "stratified": true,
+    "reference_normal_rows": 5774
+  },
+  "unscored_test_rows": 0,
+  "score_by_label_test": {
+    "normal_label_0": {
+      "count": 1444,
+      "mean": 49.27,
+      "std": 10.72,
+      "min": 21.69,
+      "p05": 30.77,
+      "p25": 41.77,
+      "median": 50.27,
+      "p75": 57.16,
+      "p95": 65.29,
+      "max": 78.72
+    },
+    "faulty_label_1": {
+      "count": 2463,
+      "mean": 49.22,
+      "std": 9.8,
+      "min": 23.46,
+      "p05": 31.61,
+      "p25": 43.32,
+      "median": 49.77,
+      "p75": 55.91,
+      "p95": 64.74,
+      "max": 81.63
+    }
+  },
+  "separation": {
+    "roc_auc_faulty_vs_normal": 0.5055,
+    "normal_reference_p05_p95": [
+      30.77,
+      65.29
+    ],
+    "faulty_within_normal_band_pct": 92.0,
+    "normal_outside_normal_band_pct": 10.1
+  },
+  "caveats": [
+    "Score construction does not use the label; the label is used only here.",
+    "The label is binary; it is not a ground-truth health or remaining-life target.",
+    "Random split with no engine or recording ID: may overstate generalization.",
+    "A high AUC means the label separates groups; it does not prove physical health."
+  ]
+}
