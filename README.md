@@ -121,28 +121,56 @@ The example demonstrates that the inference script successfully loads the model 
 
 ## Project Structure
 
-```text
-EnginePulse/
+This repository is a single integrated EngineGuard project with four active
+components: engine telemetry, vibration-based bearing condition, engine audio
+classification, and a React frontend. The audio module is part of the same
+repository, not a separate project.
+
+```
+EngineGuard/
+├── .gitignore
+├── README.md
+├── requirements.txt
 ├── data/
+│   ├── README.md
+│   ├── EngineFaultDB_Final.csv
 │   ├── Audio/
 │   │   ├── Engine Issue/
 │   │   ├── Non engine issue/
 │   │   └── Normal engine/
-│   └── EngineFaultDB-main/
-├── audio_csv/
-│   └── audio_mfcc_features.csv
+│   └── vibration_raw/
 ├── models/
+│   ├── README.md
+│   ├── benchmark_classifier_compressed.joblib
+│   ├── benchmark_metadata.json
+│   ├── vibration_classifier.joblib
+│   ├── vibration_metadata.json
+│   ├── audio_metadata.json
 │   └── audio/
-│       └── audio_random_forest_tuned.joblib
-├── outputs/
-│   └── audio/
+│       ├── audio_random_forest_tuned.joblib
+│       ├── audio_random_forest.joblib
+│       ├── audio_extra_trees_tuned.joblib
+│       ├── audio_svm_model.joblib
+│       ├── audio_svm_tuned.joblib
+│       └── audio_svm_tuned_v2.joblib
+├── reports/
+│   └── ...
 ├── src/
-│   └── audio_inference.py
-├── requirements.txt
-└── README.md
+│   ├── __init__.py
+│   ├── audio_inference.py
+│   ├── inference.py
+│   ├── vibration_inference.py
+│   ├── test_audio_inference.py
+│   ├── test_inference.py
+│   └── test_vibration_inference.py
+└── tests/
+    └── __init__.py
 ```
 
-*The structure above highlights the main audio-module files and the datasets included in the project. Other files may also be present in the repository.*
+Audio recordings and the audio model are under `data/Audio/` and
+`models/audio/`. The tabular telemetry dataset used by the main classifier is
+`data/EngineFaultDB_Final.csv`. The telemetry dataset is not stored under
+`data/EngineFaultDB-main/`.
 
 ## Technologies Used
 
