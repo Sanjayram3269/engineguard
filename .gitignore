@@ -219,6 +219,18 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.env
+
+data/*
+!data/README.md
+
+models/*
+!models/README.md
 # ML asset protection (preserve tracked READMEs only)
 data/*
 !data/README.md

@@ -1,265 +1,190 @@
-# EnginePulse — Engine Audio Classification
+﻿# EngineGuard
 
-## Overview
+EngineGuard is an experimental automotive condition-monitoring project for
+multivariable engine telemetry and vibration-based bearing-condition
+classification. Audio analysis is a separate module being prepared for
+integration.
 
-EnginePulse is an engine-monitoring project that includes an audio-classification module for identifying engine-related sounds.
+The project demonstrates a workflow from signal/measurement data through
+feature extraction, machine learning, evaluation, and model inference.
+It is a research prototype, not a certified vehicle diagnostic or safety
+system.
 
-The audio module processes recorded engine sounds, extracts Mel-Frequency Cepstral Coefficients (MFCCs), and uses a trained Random Forest classifier to classify the recording into one of three categories:
+## Current modules
 
-- **Normal engine** — audio classified as normal engine sound.
-- **Engine Issue** — audio classified as an engine-related issue.
-- **Non engine issue** — audio classified as a non-engine issue.
+| Module | Input | Output |
+|---|---|---|
+| Engine telemetry | 14 numeric engine/exhaust measurements | One of four dataset fault labels |
+| Vibration | CSV recording with Channels 1, 2, and 3 | Healthy or Faulty bearing condition |
+| Audio | To be integrated | Pending teammate handoff and interface verification |
 
-This module is intended to serve as the audio-analysis component of the broader EnginePulse project.
+## 1. Engine telemetry
 
-## Objectives
+**Dataset:** EngineFaultDB
+Source: https://github.com/leoxthomas/EngineFaultDB
+Publication: https://doi.org/10.1109/ACCESS.2023.3331316
 
-- Process engine-related audio recordings.
-- Extract meaningful acoustic features from audio signals.
-- Train and evaluate machine-learning classifiers.
-- Save the trained model for reuse.
-- Predict the category of a new audio recording using an inference script.
-- Prepare the audio pipeline for integration with the broader EnginePulse application.
+The audited CSV contains 55,999 rows and 14 numeric input features. One exact
+duplicate was removed during benchmark preparation, leaving 55,998 rows.
 
-## Dataset
+The selected baseline is a Random Forest. Three models—Random Forest,
+Extra Trees, and XGBoost—were compared, with model selection based on
+validation macro F1.
 
-The audio dataset contains **297 recordings** distributed across three categories.
-
-| Category | Number of recordings |
+| Metric | Held-out random-split result |
 |---|---:|
-| Engine Issue | 85 |
-| Non engine issue | 106 |
-| Normal engine | 106 |
-| **Total** | **297** |
+| Accuracy | 75.42% |
+| Macro F1 | 76.23% |
+| Test rows | 8,400 |
+| Mean single-row inference latency | approximately 76.7 ms |
 
-The recordings are organized into folders according to their categories under `data/Audio/`.
+The split was stratified by row, not by recording or experiment. The dataset
+does not provide a verified run/session identifier, so generalization to
+unseen experiments or vehicles has not been established.
 
-## Audio Preprocessing and Feature Extraction
+### Telemetry labels
 
-The audio-processing pipeline uses Librosa to load and process recordings.
+Class 0 is documented as Normal (no fault). Classes 1–3 are kept as generic
+fault types because their exact mapping to named physical faults has not
+been verified. Do not interpret these classes as confirmed specific diagnoses.
 
-### Configuration
+### Telemetry inference
 
-| Parameter | Value |
-|---|---|
-| Sample rate | 22,050 Hz |
-| Audio channels | Mono |
-| MFCC coefficients | 13 |
-| FFT window size (`n_fft`) | 2,048 |
-| Hop length | 512 |
+The inference function is in `src/inference.py`. It loads
+`models/benchmark_classifier_compressed.joblib` and
+`models/benchmark_metadata.json`.
 
-### MFCC feature extraction
+The model's Random Forest vote scores are not calibrated probabilities.
+The review threshold is a decision rule, not a guarantee that accepted
+predictions are correct.
 
-Mel-Frequency Cepstral Coefficients (MFCCs) represent characteristics of the audio signal and are commonly used in audio-classification tasks.
+## 2. Vibration-based bearing condition
 
-For each recording, the pipeline calculates:
+**Dataset:** Engine Journal Bearings Dataset 2, stored locally under
+`data/vibration_raw/`. The raw dataset is not included in this repository
+by default. Confirm the dataset's original source and redistribution terms
+before sharing the recordings.
 
-1. The mean of each of the 13 MFCC coefficients.
-2. The standard deviation of each of the 13 MFCC coefficients.
+The current feature table contains 134 recordings: 90 Faulty and 44 Healthy.
+Three channels are used to extract 27 time-domain and normalized spectral
+features per recording. Frequency features are expressed as normalized bins,
+not calibrated frequencies in hertz.
 
-This produces **26 features per recording**.
+A Random Forest with 300 trees and balanced class weights was fitted to all
+134 recordings for inference. Its artifact is
+`models/vibration_classifier.joblib`, with its schema and metadata in
+`models/vibration_metadata.json`.
 
-The extracted features are stored in `audio_csv/audio_mfcc_features.csv` for model development and analysis.
+Historical evaluation reports from the earlier baseline run:
 
-## Model Training and Evaluation
+| Evaluation | Accuracy | Balanced accuracy | Macro F1 |
+|---|---:|---:|---:|
+| Random recording holdout (34 recordings) | 94.12% | 93.28% | 93.28% |
+| Five-fold operating-condition-grouped CV | 91.04% | 90.43% | 89.96% |
 
-Multiple machine-learning classifiers were evaluated using the extracted audio features.
+These historical metrics are not a fresh evaluation of the final fitted
+artifact. Condition groups are defined by RPM, humidity, and temperature;
+they do not represent independent physical engines or laboratories.
+The dataset is small, and external generalization remains unverified.
 
-The best-performing model in the reported held-out evaluation was a Random Forest classifier.
+### Vibration inference and tests
 
-### Reported results
+- Feature extraction: `src/vibration_features.py`
+- Model training: `src/train_vibration_model.py`
+- Inference: `src/vibration_inference.py`
+- Raw-recording smoke test: `src/test_vibration_inference.py`
 
-| Model | Test accuracy |
-|---|---:|
-| Random Forest | 68.33% |
-| Extra Trees | 66.67% |
-| Support Vector Machine (SVM) | 61.67% |
-
-The Random Forest achieved a reported macro F1-score of **0.6791**.
-
-The reported evaluation used a 60-recording test set and 237-recording training set, with `random_state=42`.
-
-These results are preliminary and should not be interpreted as a guarantee of real-world performance. Additional recordings and independent testing are needed to establish generalization to new engines, recording environments, and operating conditions.
-
-## Audio Inference
-
-The trained Random Forest model is loaded by `src/audio_inference.py` to classify an individual audio recording.
-
-The inference pipeline:
-
-1. Accepts an audio-file path.
-2. Loads the recording and converts it to mono at 22,050 Hz.
-3. Extracts the 13 MFCC coefficients.
-4. Calculates the mean and standard deviation of each coefficient.
-5. Arranges the 26 features in the format expected by the trained model.
-6. Predicts one of the three audio categories.
-7. Returns the predicted category and, when supported by the model, class probabilities.
-
-### Example command
-
-Run the following from the project root:
+Run from the repository root:
 
 ```powershell
-python .\src\audio_inference.py ".\data\Audio\Normal engine\002.mp3"
+python .\src\test_vibration_inference.py
 ```
 
-### Example output
+The smoke test checks that raw CSV recordings pass through the feature
+extractor and saved model and return valid output. It is not an independent
+accuracy evaluation.
 
-```python
-{
-    'audio_file': 'data\\Audio\\Normal engine\\002.mp3',
-    'prediction': 'Normal engine',
-    'probabilities': {
-        'Engine Issue': 0.1274,
-        'Non engine issue': 0.4238,
-        'Normal engine': 0.4488
-    }
-}
-```
-
-The example demonstrates that the inference script successfully loads the model and returns a prediction. The probability values are model outputs and should not be interpreted as calibrated real-world confidence.
-
-## Project Structure
-
-This repository is a single integrated EngineGuard project with four active
-components: engine telemetry, vibration-based bearing condition, engine audio
-classification, and a React frontend. The audio module is part of the same
-repository, not a separate project.
-
-```
-EngineGuard/
-├── .gitignore
-├── README.md
-├── requirements.txt
-├── data/
-│   ├── README.md
-│   ├── EngineFaultDB_Final.csv
-│   ├── Audio/
-│   │   ├── Engine Issue/
-│   │   ├── Non engine issue/
-│   │   └── Normal engine/
-│   └── vibration_raw/
-├── models/
-│   ├── README.md
-│   ├── benchmark_classifier_compressed.joblib
-│   ├── benchmark_metadata.json
-│   ├── vibration_classifier.joblib
-│   ├── vibration_metadata.json
-│   ├── audio_metadata.json
-│   └── audio/
-│       ├── audio_random_forest_tuned.joblib
-│       ├── audio_random_forest.joblib
-│       ├── audio_extra_trees_tuned.joblib
-│       ├── audio_svm_model.joblib
-│       ├── audio_svm_tuned.joblib
-│       └── audio_svm_tuned_v2.joblib
-├── reports/
-│   └── ...
-├── src/
-│   ├── __init__.py
-│   ├── audio_inference.py
-│   ├── inference.py
-│   ├── vibration_inference.py
-│   ├── test_audio_inference.py
-│   ├── test_inference.py
-│   └── test_vibration_inference.py
-└── tests/
-    └── __init__.py
-```
-
-Audio recordings and the audio model are under `data/Audio/` and
-`models/audio/`. The tabular telemetry dataset used by the main classifier is
-`data/EngineFaultDB_Final.csv`. The telemetry dataset is not stored under
-`data/EngineFaultDB-main/`.
-
-## Technologies Used
-
-- **Python** — implementation of the audio pipeline.
-- **Librosa** — audio loading and MFCC feature extraction.
-- **NumPy** — numerical operations.
-- **Pandas** — feature-table creation and manipulation.
-- **Scikit-learn** — machine-learning classifiers and evaluation.
-- **Joblib** — saving and loading the trained model.
-- **Matplotlib** — visualizations and analysis.
-- **SoundFile** — audio-file support.
-
-## Installation and Setup
-
-### 1. Clone the repository
+To rebuild the vibration artifact after obtaining the local feature table:
 
 ```powershell
-git clone -b Audio/aniruddh https://github.com/Sanjayram3269/engineguard.git
-cd engineguard
+python .\src\train_vibration_model.py
 ```
 
-### 2. Create a virtual environment
+The training script refuses to overwrite existing artifacts. The feature
+table `data/vibration_features.csv` is generated locally by the feature
+extraction workflow and is not committed by default.
+
+## 3. Environment setup
+
+Python 3.11 was used in the current development environment.
 
 ```powershell
 python -m venv .venv
-```
-
-### 3. Activate the virtual environment
-
-```powershell
 .\.venv\Scripts\Activate.ps1
-```
-
-### 4. Install dependencies
-
-```powershell
 python -m pip install -r requirements.txt
 ```
 
-The installed scikit-learn version should match the version used to save the model. The current model was saved using scikit-learn 1.9.1, so the dependency file should specify:
+The telemetry dataset and vibration recordings are local inputs and must be
+obtained separately. Model artifacts must match their metadata and feature
+schemas.
 
-```text
-scikit-learn==1.9.1
-```
+## 4. Limitations
 
-### 5. Run inference
+- These models are experimental decision-support components.
+- The telemetry random split does not prove run-independent generalization.
+- The vibration dataset has only 134 recordings and no independent-engine
+  validation.
+- Random Forest vote fractions are not calibrated probabilities.
+- A successful smoke test verifies execution, not diagnostic reliability.
+- The audio model and any multimodal fusion must be evaluated separately
+  before they are represented as validated system capabilities.
+- Do not use these outputs as a substitute for qualified mechanical
+  inspection or safety-critical decisions.
+
+## 5. Engine audio classification
+
+**Module:** Engine audio classification (three-way classification of engine
+recordings).
+
+**Classes:** `Engine Issue`, `Non engine issue`, `Normal engine`.
+
+**Inference entry point:** `src/audio_inference.py`, loading
+`models/audio/audio_random_forest_tuned.joblib`.
+
+**Feature schema:** 26 MFCC features (`mfcc_1_mean` / `mfcc_1_std` through
+`mfcc_13_mean` / `mfcc_13_std`), extracted with librosa at 22050 Hz mono,
+`n_mfcc=13`, `n_fft=2048`, `hop_length=512`.
+
+**Model metadata:** `models/audio_metadata.json`.
+
+**Audio dataset:** recordings under `data/Audio/` in three category folders:
+`Engine Issue`, `Non engine issue`, `Normal engine`. The audio dataset is a
+separate collected sample and is not the same data or taxonomy as the tabular
+EngineFaultDB dataset used by the telemetry classifier.
+
+**Running audio inference from the repository root:**
 
 ```powershell
+python -m pip install -r requirements.txt
 python .\src\audio_inference.py ".\data\Audio\Normal engine\002.mp3"
 ```
 
-Replace the example path with the path to another supported audio recording.
+**Audio smoke test:**
 
-## Current Status
+```powershell
+python -m src.test_audio_inference
+```
 
-- [x] Organized the audio dataset into three classification categories.
-- [x] Extracted 26 MFCC statistical features per recording.
-- [x] Stored extracted features in a CSV file.
-- [x] Evaluated Random Forest, Extra Trees, and SVM classifiers.
-- [x] Saved the trained Random Forest model.
-- [x] Created an audio inference script.
-- [x] Successfully tested inference on an example MP3 recording.
-- [x] Added the audio module and relevant project assets to the `Audio/aniruddh` branch.
-- [ ] Improve classification performance through further evaluation and testing.
-- [ ] Test the model on additional independent recordings.
-- [ ] Integrate audio inference into the complete EnginePulse application.
+The smoke test loads the real audio model and predicts on a real recording. It
+is not an independent accuracy evaluation.
 
-## Limitations
+**Limitations:** audio scores are not calibrated probabilities, the dataset is
+small, and this module does not map to specific mechanical faults. Integration
+with the telemetry and vibration modules and the React frontend is pending.
 
-- The model currently predicts only the three audio categories defined for this module.
-- Classification performance depends on recording quality, engine type, background noise, and similarity to the training data.
-- The reported test performance is preliminary and requires further independent validation.
-- Class probabilities are not necessarily calibrated confidence scores.
-- The audio classifier does not independently identify the detailed fault categories available in the separate EngineFaultDB dataset.
-- Integration with the complete application remains a separate development task.
+## 6. Frontend
 
-## Future Improvements
+A React frontend is provided on the `ui` branch. It is currently rule-based
+simulation for demonstration and is not wired to the real inference models.
 
-- Expand the dataset with recordings from different engines and operating conditions.
-- Improve feature engineering and compare additional classification approaches.
-- Evaluate the model using independent recordings and more robust validation.
-- Explore confidence calibration and handling of uncertain predictions.
-- Integrate the inference module into the EnginePulse application.
-- Evaluate the audio module alongside other engine-monitoring components without conflating their output labels.
-
-## Conclusion
-
-The EnginePulse audio module establishes an initial machine-learning pipeline for engine-sound classification, from MFCC feature extraction and classifier evaluation to saved-model inference. It provides a foundation for further validation and integration into the broader engine-monitoring system.
-
-## Repository
-
-GitHub: https://github.com/Sanjayram3269/engineguard/tree/Audio/aniruddh
+See the `ui` branch for the frontend source and build instructions.
