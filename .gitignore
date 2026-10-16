@@ -236,3 +236,18 @@ data/*
 !data/README.md
 models/*
 !models/README.md
+
+# Frontend
+node_modules/
+frontend/dist/
+!frontend/src/lib/
+!frontend/src/lib/**
+
+# Local temporary and cache folders
+.audio_test_venv/
+.freebuff/
+_scratch_untracked/
+ui_src/
+ui_src2/
+ui_work/
+*.log

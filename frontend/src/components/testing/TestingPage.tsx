@@ -57,6 +57,7 @@ interface UploadedFileInfo {
   name: string;
   sizeFormatted: string;
   isSample: boolean;
+  file?: File;
 }
 
 export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => {
@@ -169,21 +170,21 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
         const parsed = parseTabularCsv(text);
         if (parsed) {
           setTabularData(parsed.data);
-          setUploadedFile({ name: file.name, sizeFormatted, isSample: false });
+          setUploadedFile({ name: file.name, sizeFormatted, isSample: false, file });
         } else {
           // If CSV has custom headers, use fallback while preserving file info
           setTabularData(TABULAR_PRESETS[1].data);
-          setUploadedFile({ name: file.name, sizeFormatted, isSample: false });
+          setUploadedFile({ name: file.name, sizeFormatted, isSample: false, file });
         }
       };
       reader.readAsText(file);
     } else if (modality === 'audio') {
-      if (!file.name.toLowerCase().match(/\.(wav|mp3|ogg|m4a)$/)) {
+      if (!file.name.toLowerCase().match(/\.(wav|mp3|ogg|m4a|aac|flac)$/)) {
         setValidationError('Please upload a valid WAV, MP3, or OGG engine audio recording.');
         return;
       }
       // Process audio file
-      setUploadedFile({ name: file.name, sizeFormatted, isSample: false });
+      setUploadedFile({ name: file.name, sizeFormatted, isSample: false, file });
       // Create audio context to decode real duration and peak
       try {
         const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
@@ -231,21 +232,21 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
       reader.onload = (e) => {
         const text = e.target?.result as string;
         const parsed = parseVibrationCsv(text);
-        if (parsed.timeSeries.length > 5) {
+        if (parsed && parsed.timeSeries.length > 5) {
           setVibrationData({
             sampleName: file.name,
             samplingRateHz: 5000,
-            rmsAccelerationG: parsed.rms > 0 ? parseFloat(parsed.rms.toFixed(2)) : 2.45,
-            peakToPeakG: parsed.peakToPeak > 0 ? parseFloat(parsed.peakToPeak.toFixed(1)) : 9.8,
-            crestFactor: 4.0,
-            dominantOrderHz: 41.6,
+            rmsAccelerationG: parsed.rmsAccelerationG,
+            peakToPeakG: parsed.peakToPeakG,
+            crestFactor: parsed.crestFactor,
+            dominantOrderHz: parsed.dominantOrderHz,
             timeSeries: parsed.timeSeries.slice(0, 80),
             fftSpectrum: VIBRATION_PRESETS[1].data.fftSpectrum
           });
-          setUploadedFile({ name: file.name, sizeFormatted, isSample: false });
+          setUploadedFile({ name: file.name, sizeFormatted, isSample: false, file });
         } else {
           setVibrationData(VIBRATION_PRESETS[1].data);
-          setUploadedFile({ name: file.name, sizeFormatted, isSample: false });
+          setUploadedFile({ name: file.name, sizeFormatted, isSample: false, file });
         }
       };
       reader.readAsText(file);
@@ -311,31 +312,37 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
       setAnalysisStep(3);
     }, 950);
 
-    // Step 4 & Final Verdict at 1450ms
-    setTimeout(() => {
+    // Step 4 & Final Verdict at 1500ms
+    setTimeout(async () => {
       setAnalysisStep(4);
       let result: DiagnosticResult;
-      if (modality === 'tabular') {
-        result = evaluateTabularData(tabularData);
-      } else if (modality === 'audio') {
-        if (uploadedFile?.file) {
-          try {
+
+      try {
+        if (modality === 'tabular') {
+          if (uploadedFile?.file) {
+            result = await evaluateTabularDataViaApi(uploadedFile.file);
+          } else {
+            result = await evaluateTabularDataViaApi(tabularData);
+          }
+        } else if (modality === 'audio') {
+          if (uploadedFile?.file) {
             result = await evaluateAudioDataViaApi(uploadedFile.file);
-          } catch (err) {
-            console.warn('audio API call failed, using demo evaluator', err);
+          } else {
             result = evaluateAudioData(audioData);
           }
         } else {
-          result = evaluateAudioData(audioData);
-        }
-      } else {
-        if (uploadedFile?.file) {
-          try {
+          if (uploadedFile?.file) {
             result = await evaluateVibrationDataViaApi(uploadedFile.file);
-          } catch (err) {
-            console.warn('vibration API call failed, using demo evaluator', err);
+          } else {
             result = evaluateVibrationData(vibrationData);
           }
+        }
+      } catch (err) {
+        console.warn('Backend inference API unavailable, falling back to simulated evaluator:', err);
+        if (modality === 'tabular') {
+          result = evaluateTabularData(tabularData);
+        } else if (modality === 'audio') {
+          result = evaluateAudioData(audioData);
         } else {
           result = evaluateVibrationData(vibrationData);
         }

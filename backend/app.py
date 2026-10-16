@@ -20,7 +20,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, List
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -52,7 +52,14 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:4173",
+        "http://127.0.0.1:4173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -75,15 +82,59 @@ class TabularInput(BaseModel):
 
 
 @app.post("/predict/tabular")
-async def predict_tabular(body: TabularInput) -> Dict[str, Any]:
-    missing = body.validate_features()
+async def predict_tabular(
+    request: Request,
+) -> Dict[str, Any]:
+    content_type = request.headers.get("content-type", "")
+    raw_dict: Dict[str, float] = {}
+
+    if "multipart/form-data" in content_type:
+        form = await request.form()
+        uploaded_file = form.get("file")
+        if not uploaded_file:
+            raise HTTPException(status_code=400, detail="Tabular upload requires a file field in multipart form-data.")
+        try:
+            content = await uploaded_file.read()
+            import io
+            import pandas as pd
+            df = pd.read_csv(io.BytesIO(content))
+            if df.empty:
+                raise HTTPException(status_code=400, detail="Uploaded CSV contains no rows.")
+            first_row = df.iloc[0].to_dict()
+            for feat in TELEMETRY_EXPECTED_FEATURES:
+                if feat in first_row:
+                    try:
+                        raw_dict[feat] = float(first_row[feat])
+                    except (ValueError, TypeError):
+                        pass
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=f"Failed to parse tabular CSV: {exc}")
+    else:
+        try:
+            body_json = await request.json()
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=f"Invalid JSON body: {exc}")
+        if not isinstance(body_json, dict):
+            raise HTTPException(status_code=422, detail="Request body must be a JSON object.")
+        body_data = body_json.get("data") if "data" in body_json else body_json
+        if not isinstance(body_data, dict):
+            raise HTTPException(status_code=422, detail="JSON must contain a 'data' dictionary.")
+        for k, v in body_data.items():
+            try:
+                raw_dict[str(k)] = float(v)
+            except (ValueError, TypeError):
+                pass
+
+    missing = [name for name in TELEMETRY_EXPECTED_FEATURES if name not in raw_dict]
     if missing:
         raise HTTPException(
             status_code=422,
             detail=f"Missing or incorrect telemetry features: {missing}",
         )
 
-    result = telemetry_predict(body.data)
+    result = telemetry_predict(raw_dict)
     if result.get("status") != "success":
         raise HTTPException(
             status_code=500,
@@ -92,13 +143,14 @@ async def predict_tabular(body: TabularInput) -> Dict[str, Any]:
 
     metrics = result.get("metrics", {})
     expected = TELEMETRY_EXPECTED_FEATURES
-    actual = sorted(body.data.keys())
+    actual = sorted(raw_dict.keys())
     feature_order_ok = expected == actual
 
     return {
         "module": "tabular",
         "status": "success",
         "predicted_class": result.get("predicted_class"),
+        "prediction": result.get("predicted_class"),
         "confidence": result.get("confidence"),
         "confidence_type": result.get("confidence_type"),
         "review_required": result.get("review_required"),
@@ -230,15 +282,22 @@ async def predict_audio(file: UploadFile = File(
     expected_features = AUDIO_EXPECTED_FEATURES
     feature_order_ok = expected_features == actual_features
 
+    probs = result.get("probabilities", {})
+    best_class = result.get("prediction")
+    confidence_val = probs.get(best_class, 0.0)
+
     return {
         "module": "audio",
         "status": "success",
         "audio_file": result.get("audio_file"),
         "prediction": result.get("prediction"),
+        "confidence": confidence_val,
+        "confidence_type": "random_forest_class_vote",
         "expected_features": expected_features,
         "actual_features": actual_features,
         "feature_order_validated": feature_order_ok,
-        "probabilities": result.get("probabilities", {}),
+        "probabilities": probs,
+        "class_probabilities": probs,
         "message": "Audio inference completed. Probabilities are Random Forest class fractions, not calibrated confidence.",
     }
 

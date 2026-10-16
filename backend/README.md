@@ -10,7 +10,7 @@ frontend output as real inference.
 ## Endpoints
 
 - `GET /health` — returns `ok` when all required model and metadata files are present.
-- `POST /predict/tabular` — telemetry inference from a JSON feature map.
+- `POST /predict/tabular` — telemetry inference from a JSON feature map or CSV upload.
 - `POST /predict/vibration` — vibration inference from an uploaded CSV file.
 - `POST /predict/audio` — audio inference from an uploaded audio file.
 
@@ -19,7 +19,7 @@ frontend output as real inference.
 Each endpoint validates the feature set it receives against the repository's
 metadata files:
 
-- Tabular: `models/benchmark_metadata.json` → `feature_names`
+- Tabular: `models/benchmark_metadata.json` → `feature_names` (14 features: MAP, TPS, Force, Power, RPM, Consumption L/H, Consumption L/100KM, Speed, CO, HC, CO2, O2, Lambda, AFR)
 - Vibration: `models/vibration_metadata.json` → `feature_columns`
 - Audio: `models/audio_metadata.json` → `feature_schema.feature_names`
 
@@ -43,6 +43,8 @@ The server allows requests from the local frontend dev servers:
 
 - `http://localhost:5173`
 - `http://127.0.0.1:5173`
+- `http://localhost:3000`
+- `http://127.0.0.1:3000`
 
 ## Dependencies
 
@@ -50,10 +52,19 @@ See `requirements.txt`.
 
 ## Start
 
+### Backend (FastAPI):
 From the repository root:
 
-```bash
+```powershell
 .\.venv\Scripts\python -m uvicorn backend.app:app --host 127.0.0.1 --port 8000
+```
+
+### Frontend (React / Vite):
+From the repository root:
+
+```powershell
+cd frontend
+npm run dev
 ```
 
 The server must be able to import `src/` as a package, and the models must be

@@ -1,12 +1,21 @@
 export type InputModality = 'tabular' | 'audio' | 'vibration';
 
 export interface TabularEngineData {
-  rpm: number;                  // 600 - 7500 RPM
-  mapKpa: number;               // 20 - 250 kPa (Manifold Absolute Pressure)
-  coolantTempC: number;         // 60 - 130 °C
-  oilPressurePsi: number;       // 10 - 90 PSI
-  knockSensorVolts: number;     // 0.0 - 5.0 V
-  intakeAirTempC: number;       // 10 - 80 °C
+  // Real telemetry model feature schema: models/benchmark_metadata.json#feature_names
+  RPM: number;
+  MAP: number;
+  TPS: number;
+  Force: number;
+  Power: number;
+  Speed: number;
+  "CO": number;
+  HC: number;
+  "CO2": number;
+  O2: number;
+  Lambda: number;
+  AFR: number;
+  "Consumption L/H": number;
+  "Consumption L/100KM": number;
 }
 
 export interface AudioEngineData {
@@ -51,13 +60,14 @@ export interface DiagnosticResult {
     value: string;
     status: 'normal' | 'caution' | 'critical';
   }[];
-  details: {
-    summary: string;
-    audio_features: string | null;
-    selected_features: string[];
-    top_factors: string[];
-    fault_probability_classified: string;
+  details?: {
+    summary?: string;
+    audio_features?: string | null;
+    selected_features?: string[];
+    top_factors?: string[];
+    fault_probability_classified?: string;
   };
+  isSimulated?: boolean;
 }
 
 export interface PresetScenario<T> {
@@ -69,15 +79,18 @@ export interface PresetScenario<T> {
 }
 
 export interface ApiDiagnosticResult {
-  prediction: string;
-  class_scores?: Record<string, number>;
+  module?: string;
+  status?: string;
+  prediction?: string;
+  predicted_class?: string;
   confidence?: number;
-  top_factors?: string[];
-  details?: {
-    summary?: string;
-    audio_features?: string | null;
-    selected_features?: string[];
-    top_factors?: string[];
-    fault_probability_classified?: string;
-  };
+  confidence_type?: string;
+  review_required?: boolean;
+  review_reason?: string | null;
+  probabilities?: Record<string, number>;
+  class_probabilities?: Record<string, number>;
+  expected_features?: string[];
+  actual_features?: string[];
+  metrics?: Record<string, any>;
+  message?: string;
 }
