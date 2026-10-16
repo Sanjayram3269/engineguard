@@ -124,14 +124,21 @@ export function computeSingleSidedSpectrum(
   // Take a contiguous segment from the middle if signal is longer than n
   const startOffset = Math.floor((signalLen - n) / 2);
 
+  // Compute mean over analysis segment to isolate DC sensor offset from AC vibrations
+  let mean = 0;
+  for (let i = 0; i < n; i++) {
+    mean += signal[startOffset + i];
+  }
+  mean /= n;
+
   const real = new Float64Array(nFft);
   const imag = new Float64Array(nFft);
 
-  // Apply Hann window and accumulate coherent gain
+  // Apply Hann window to centered AC component and accumulate coherent gain
   let coherentGain = 0;
   for (let i = 0; i < n; i++) {
     const w = n > 1 ? 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (n - 1)) : 1.0;
-    real[i] = signal[startOffset + i] * w;
+    real[i] = (signal[startOffset + i] - mean) * w;
     coherentGain += w;
   }
   // Zero-padding for i >= n is already 0 in Float64Array
@@ -148,10 +155,16 @@ export function computeSingleSidedSpectrum(
   let dominantAmplitude = 0;
 
   for (let k = 0; k <= numBins; k++) {
-    const magnitude = Math.hypot(real[k], imag[k]);
-    // DC and Nyquist are single-sided (factor 1); interior positive frequencies are doubled (factor 2)
-    const factor = (k === 0 || k === numBins) ? 1.0 : 2.0;
-    const amp = (factor * magnitude) / coherentGain;
+    let amp: number;
+    if (k === 0) {
+      // Physical DC sensor offset is the absolute mean of the signal
+      amp = Math.abs(mean);
+    } else {
+      const magnitude = Math.hypot(real[k], imag[k]);
+      // Nyquist (k=numBins) is single-sided (factor 1); interior AC bins are doubled (factor 2)
+      const factor = (k === numBins) ? 1.0 : 2.0;
+      amp = (factor * magnitude) / coherentGain;
+    }
     const freq = k * deltaF;
 
     spectrum.push({
@@ -159,7 +172,7 @@ export function computeSingleSidedSpectrum(
       amp: Number(amp.toFixed(6)),
     });
 
-    // Dominant frequency searches AC bins (k >= 1) to ignore DC sensor offset
+    // Dominant frequency searches AC bins (k >= 1) to ignore DC sensor bias
     if (k >= 1 && amp > dominantAmplitude) {
       dominantAmplitude = amp;
       dominantFrequency = freq;
@@ -417,13 +430,37 @@ export function parseVibrationCsv(
     };
   }
 
-  // 3. Select active channel
+  // 3. Select active channel (prefer non-constant channel if no channel explicitly requested)
   let activeChannel = availableChannels[0];
   if (selectedChannelName) {
     const matched = availableChannels.find(
       c => c.name.toLowerCase() === selectedChannelName.toLowerCase()
     );
     if (matched) activeChannel = matched;
+  } else if (availableChannels.length > 1) {
+    // If no channel explicitly selected, check if first channel is all zeros/constant
+    for (const cand of availableChannels) {
+      let nonZeroOrVarying = false;
+      let firstVal: number | null = null;
+      const testLimit = Math.min(lines.length, 40);
+      for (let r = 1; r < testLimit; r++) {
+        const row = parseCsvRow(lines[r]);
+        if (row.length > cand.index) {
+          const val = Number(row[cand.index]);
+          if (Number.isFinite(val)) {
+            if (firstVal === null) firstVal = val;
+            if (Math.abs(val - firstVal) > 1e-6 || Math.abs(val) > 1e-6) {
+              nonZeroOrVarying = true;
+              break;
+            }
+          }
+        }
+      }
+      if (nonZeroOrVarying) {
+        activeChannel = cand;
+        break;
+      }
+    }
   }
 
   // 4. Extract numeric samples
@@ -601,13 +638,20 @@ export function parseVibrationCsv(
   const peakToPeak = maxVal - minVal;
   const crestFactor = rms > 0 ? peakCentered / rms : 0;
 
+  if (peakToPeak < 1e-9) {
+    const constMsg = `Selected channel (${activeChannel.name}) has zero variance (constant or all-zero data). Frequency analysis reflects baseline offset.`;
+    qualityWarning = qualityWarning ? `${qualityWarning} ${constMsg}` : constMsg;
+  }
+
   // 10. Compute FFT Spectrum
   const spectrumResult = computeSingleSidedSpectrum(uniformSignal, samplingRateHz, 4096);
 
-  // 11. Compute STFT Spectrogram
+  // 11. Compute STFT Spectrogram with adaptive time-frequency resolution
+  const vibFrameSize = targetUniformCount < 800 ? 128 : targetUniformCount < 1600 ? 256 : 512;
+  const vibHopSize = Math.max(16, Math.floor(vibFrameSize / 4));
   const spectrogram = computeSTFT(uniformSignal, samplingRateHz, {
-    frameSize: 256,
-    hopSize: 128,
+    frameSize: vibFrameSize,
+    hopSize: vibHopSize,
     maxFrames: 64,
     maxBins: 32,
   });
@@ -624,6 +668,46 @@ export function parseVibrationCsv(
     });
   }
 
+  // 13. Multi-channel metrics for RMS comparison and channel comparison graphs
+  const channelMetrics: { name: string; rms: number; peakToPeak: number; timeSeries: { t: number; a: number }[] }[] = [];
+  const maxComparePoints = Math.min(250, lines.length - 1);
+  const compStep = Math.max(1, Math.floor((lines.length - 1) / maxComparePoints));
+
+  for (const ch of availableChannels) {
+    let sumSq = 0;
+    let count = 0;
+    let minCh = Infinity;
+    let maxCh = -Infinity;
+    const chSeries: { t: number; a: number }[] = [];
+
+    for (let r = 1; r < lines.length; r++) {
+      const row = parseCsvRow(lines[r]);
+      if (row.length <= Math.max(timeIndex, ch.index)) continue;
+      const tVal = Number(row[timeIndex]);
+      const aVal = Number(row[ch.index]);
+      if (Number.isFinite(tVal) && Number.isFinite(aVal)) {
+        sumSq += aVal * aVal;
+        count++;
+        if (aVal < minCh) minCh = aVal;
+        if (aVal > maxCh) maxCh = aVal;
+
+        if (r % compStep === 0 && chSeries.length < 250) {
+          chSeries.push({ t: Number(tVal.toFixed(4)), a: Number(aVal.toFixed(5)) });
+        }
+      }
+    }
+
+    const chRms = count > 0 ? Math.sqrt(sumSq / count) : 0;
+    const chP2P = count > 0 && Number.isFinite(minCh) ? maxCh - minCh : 0;
+
+    channelMetrics.push({
+      name: ch.name,
+      rms: Number(chRms.toFixed(5)),
+      peakToPeak: Number(chP2P.toFixed(5)),
+      timeSeries: chSeries,
+    });
+  }
+
   return {
     success: true,
     data: {
@@ -637,6 +721,7 @@ export function parseVibrationCsv(
       fftSpectrum: spectrumResult.spectrum,
       selectedChannel: activeChannel.name,
       availableChannels: availableChannels.map(c => c.name),
+      channelMetrics,
       qualityWarning,
       spectrogram,
       rawCsvText: csvContent,

@@ -104,7 +104,10 @@ async def predict_tabular(
             for feat in TELEMETRY_EXPECTED_FEATURES:
                 if feat in first_row:
                     try:
-                        raw_dict[feat] = float(first_row[feat])
+                        v_num = float(first_row[feat])
+                        import math
+                        if math.isfinite(v_num):
+                            raw_dict[feat] = v_num
                     except (ValueError, TypeError):
                         pass
         except HTTPException:
@@ -121,9 +124,12 @@ async def predict_tabular(
         body_data = body_json.get("data") if "data" in body_json else body_json
         if not isinstance(body_data, dict):
             raise HTTPException(status_code=422, detail="JSON must contain a 'data' dictionary.")
+        import math
         for k, v in body_data.items():
             try:
-                raw_dict[str(k)] = float(v)
+                v_num = float(v)
+                if math.isfinite(v_num):
+                    raw_dict[str(k)] = v_num
             except (ValueError, TypeError):
                 pass
 

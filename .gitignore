@@ -251,3 +251,10 @@ ui_src/
 ui_src2/
 ui_work/
 *.log
+*.tsbuildinfo
+frontend/tsconfig.tsbuildinfo
+dataset_audit/
+dataset_audit_output.txt
+audit_bearing_reports.py
+audit_datasets.py
+preview_bearing_docs.py

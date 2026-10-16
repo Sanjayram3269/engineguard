@@ -292,6 +292,110 @@ function runTestSuite() {
     );
   });
 
+  // --------------------------------------------------------------------------
+  // TEST 11: DC-Offset Separation & Dominant AC Peak Preservation
+  // --------------------------------------------------------------------------
+  test('DC-offset signal centering prevents DC spectral leakage from masking AC peaks', () => {
+    const fs = 4000;
+    const f0 = 250; // Exact integer bin 128 (250 / (4000/2048) = 128)
+    const AC_Amp = 1.2;
+    const DC_Offset = 15.0; // Large DC bias 12.5x larger than AC
+    const N = 2048;
+    const signal = new Float64Array(N);
+
+    for (let n = 0; n < N; n++) {
+      signal[n] = DC_Offset + AC_Amp * Math.sin((2 * Math.PI * f0 * n) / fs);
+    }
+
+    const result = computeSingleSidedSpectrum(signal, fs, 2048);
+
+    // Bin 0 must reflect the DC offset
+    assert(
+      Math.abs(result.spectrum[0].amp - DC_Offset) < 0.1,
+      `DC amplitude at f=0 must match ${DC_Offset}, got ${result.spectrum[0].amp}`
+    );
+
+    // Dominant AC frequency must be 250 Hz, NOT a DC leakage bin
+    assert(
+      Math.abs(result.dominantFrequency - f0) <= result.deltaF,
+      `Dominant AC frequency must be ~${f0} Hz, got ${result.dominantFrequency} Hz`
+    );
+
+    // Measured AC amplitude must be ~1.2
+    assert(
+      Math.abs(result.dominantAmplitude - AC_Amp) < 0.05,
+      `Dominant AC amplitude should be ~${AC_Amp}, got ${result.dominantAmplitude}`
+    );
+  });
+
+  // --------------------------------------------------------------------------
+  // TEST 12: Constant / All-Zero Channel Quality Warning
+  // --------------------------------------------------------------------------
+  test('Constant or zero-valued channel generates descriptive quality warning', () => {
+    const csvContent = [
+      '"Time","Channel 1","Channel 2"',
+      ...Array.from({ length: 40 }, (_, i) => `"${(i * 0.005).toFixed(4)}","0.000","${(Math.sin(i)).toFixed(3)}"`)
+    ].join('\n');
+
+    // Default should auto-select Channel 2 because Channel 1 is constant zero
+    const autoResult = parseVibrationCsv(csvContent, 'auto_select.csv');
+    assert.strictEqual(autoResult.success, true);
+    assert.strictEqual(autoResult.data!.selectedChannel, 'Channel 2');
+
+    // Explicitly requesting Channel 1 should succeed but emit zero-variance warning
+    const constResult = parseVibrationCsv(csvContent, 'const.csv', 'Channel 1');
+    assert.strictEqual(constResult.success, true);
+    assert(constResult.data!.qualityWarning !== null);
+    assert(constResult.data!.qualityWarning!.includes('zero variance') || constResult.data!.qualityWarning!.includes('all-zero'));
+  });
+
+  // --------------------------------------------------------------------------
+  // TEST 13: Short & Odd-Length Signals without Artifacts
+  // --------------------------------------------------------------------------
+  test('Short and odd-length signals handle windowing and FFT without NaNs', () => {
+    const oddLength = 137;
+    const fs = 1000;
+    const signal = new Float64Array(oddLength);
+    for (let i = 0; i < oddLength; i++) {
+      signal[i] = Math.sin((2 * Math.PI * 50 * i) / fs);
+    }
+
+    const res = computeSingleSidedSpectrum(signal, fs, 512);
+    assert(res.spectrum.length > 0);
+    assert(!Number.isNaN(res.dominantFrequency));
+    assert(!Number.isNaN(res.dominantAmplitude));
+    assert(res.spectrum.every(p => Number.isFinite(p.freq) && Number.isFinite(p.amp)));
+  });
+
+  // --------------------------------------------------------------------------
+  // TEST 14: Resampling Strictly Bounded with No Extrapolation
+  // --------------------------------------------------------------------------
+  test('Resampling strictly preserves time bounds without extrapolation', () => {
+    const rows = [
+      'Time,Channel 1',
+      ...Array.from({ length: 50 }, (_, i) => `${(0.1 + i * 0.01).toFixed(4)},${(Math.cos(i * 0.2)).toFixed(3)}`)
+    ].join('\n');
+
+    const result = parseVibrationCsv(rows, 'bounds.csv');
+    assert.strictEqual(result.success, true);
+    const ts = result.data!.timeSeries;
+    assert(ts[0].t >= 0.1, `Start time ${ts[0].t} must be >= 0.1`);
+    assert(ts[ts.length - 1].t <= 0.1 + 49 * 0.01 + 1e-4, 'End time must not extrapolate beyond measured span');
+  });
+
+  // --------------------------------------------------------------------------
+  // TEST 15: UTF-8 BOM, Quoted Headers & Whitespace Handling
+  // --------------------------------------------------------------------------
+  test('UTF-8 BOM, quoted headers, and whitespace handled cleanly', () => {
+    const bomCsv = '\uFEFF"Time" , "Channel 1" \r\n' +
+      Array.from({ length: 30 }, (_, i) => ` ${(i * 0.002).toFixed(4)} , ${(i % 2 === 0 ? 0.5 : -0.5)} `).join('\r\n');
+
+    const result = parseVibrationCsv(bomCsv, 'bom_test.csv');
+    assert.strictEqual(result.success, true);
+    assert.deepStrictEqual(result.data!.availableChannels, ['Channel 1']);
+    assert(result.data!.rmsAccelerationG > 0.4);
+  });
+
   console.log(`\nAll ${passedTests}/${totalTests} tests passed successfully!`);
 }
 

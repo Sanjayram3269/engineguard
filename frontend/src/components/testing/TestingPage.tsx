@@ -13,13 +13,15 @@ import {
   Sliders,
   Waves,
   Activity,
-  Layers,
   BarChart3,
-  ChevronDown,
-  ChevronUp
+  Keyboard,
+  CheckSquare,
+  Square,
+  Zap,
+  Trash2,
+  Box
 } from 'lucide-react';
 import {
-  InputModality,
   TabularEngineData,
   AudioEngineData,
   VibrationEngineData,
@@ -35,50 +37,69 @@ import {
   evaluateTabularDataViaApi,
   evaluateAudioDataViaApi,
   evaluateVibrationDataViaApi,
-  validateTabularData,
-  validateAudioData,
-  validateVibrationData,
-  parseTabularCsv,
-  ValidationResult
+  parseTabularCsv
 } from '../../lib/diagnosticEngine';
 import { analyzeAudioFile, parseVibrationCsv as parseVibrationCsvFull } from '../../lib/signalProcessing';
 import { COMPONENT_METADATA } from '../../types/engine';
 import { TestingEngineCanvas } from './TestingEngineCanvas';
 import { DiagnosticCharts } from './DiagnosticCharts';
+import { TabularInputPanel } from './TabularInputPanel';
 import { ActionableRecommendations } from './ActionableRecommendations';
+import { UnifiedResultsDashboard, UnifiedResultsData } from './UnifiedResultsDashboard';
+import { StreamOutputResult } from './DiagnosticOutputCards';
+import { calculateEngineHealthIndex } from '../../lib/engineHealthIndex';
+import { summarizeTabularCsv, summarizeManualTabularData, TabularDataSummary } from '../../lib/tabularCsvSummary';
 
 interface TestingPageProps {
   onBackToLanding: () => void;
 }
 
 type LabState = 'UPLOAD' | 'ANALYZING' | 'RESULT';
-
-interface UploadedFileInfo {
-  name: string;
-  sizeFormatted: string;
-  isSample: boolean;
-  file?: File;
-}
+type TabularSubMode = 'manual' | 'csv';
+type ActiveTab = 'tabular' | 'audio' | 'vibration';
+type ResultViewMode = 'dashboard' | 'cad';
 
 export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => {
-  const [modality, setModality] = useState<InputModality>('tabular');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('tabular');
   const [labState, setLabState] = useState<LabState>('UPLOAD');
+  const [resultViewMode, setResultViewMode] = useState<ResultViewMode>('dashboard');
   const [analysisStep, setAnalysisStep] = useState<number>(0);
   const [showChartsDrawer, setShowChartsDrawer] = useState<boolean>(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
-  // File state
-  const [uploadedFile, setUploadedFile] = useState<UploadedFileInfo | null>({
-    name: 'c14ne_cylinder_detonation_run.csv',
-    sizeFormatted: '48.2 KB',
-    isSample: true
-  });
+  // ============================================================
+  // STREAM STATES (3 Independent Streams)
+  // ============================================================
+
+  // 1. Tabular Stream
+  const [tabularIncluded, setTabularIncluded] = useState<boolean>(true);
+  const [tabularSubMode, setTabularSubMode] = useState<TabularSubMode>('manual');
+  const [tabularData, setTabularData] = useState<TabularEngineData | null>(TABULAR_PRESETS[0].data);
+  const [manualTabularData, setManualTabularData] = useState<TabularEngineData | null>(TABULAR_PRESETS[0].data);
+  const [tabularFile, setTabularFile] = useState<File | null>(null);
+  const [tabularFileName, setTabularFileName] = useState<string>('c14ne_nominal_baseline.csv');
+  const [tabularFileSize, setTabularFileSize] = useState<string>('52.4 KB');
+  const [isTabularSample, setIsTabularSample] = useState<boolean>(true);
+
+  // 2. Audio Stream
+  const [audioIncluded, setAudioIncluded] = useState<boolean>(true);
+  const [audioData, setAudioData] = useState<AudioEngineData | null>(AUDIO_PRESETS[0].data);
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [audioFileName, setAudioFileName] = useState<string>('c14ne_nominal_idle.wav');
+  const [audioFileSize, setAudioFileSize] = useState<string>('780 KB');
+  const [isAudioSample, setIsAudioSample] = useState<boolean>(true);
+
+  // 3. Vibration Stream
+  const [vibrationIncluded, setVibrationIncluded] = useState<boolean>(true);
+  const [vibrationData, setVibrationData] = useState<VibrationEngineData | null>(VIBRATION_PRESETS[0].data);
+  const [vibrationFile, setVibrationFile] = useState<File | null>(null);
+  const [vibrationFileName, setVibrationFileName] = useState<string>('c14ne_triaxial_baseline.csv');
+  const [vibrationFileSize, setVibrationFileSize] = useState<string>('128 KB');
+  const [isVibrationSample, setIsVibrationSample] = useState<boolean>(true);
+
+  // Drag and drop states
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Modality dataset payloads
-  const [tabularData, setTabularData] = useState<TabularEngineData>(TABULAR_PRESETS[1].data); // Cylinder 3 detonation
-  const [audioData, setAudioData] = useState<AudioEngineData>(AUDIO_PRESETS[1].data); // Rod knock
-  const [vibrationData, setVibrationData] = useState<VibrationEngineData>(VIBRATION_PRESETS[1].data); // Crankshaft imbalance
 
   // 3D Canvas states
   const [explosionProgress, setExplosionProgress] = useState<number>(0.0);
@@ -87,15 +108,37 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
   const [hoveredComponentId, setHoveredComponentId] = useState<string | null>(null);
 
-  // Diagnostic evaluation result
-  const [diagnosticResult, setDiagnosticResult] = useState<DiagnosticResult | null>(null);
-  const [validationError, setValidationError] = useState<string | null>(null);
+  // Unified Diagnostic evaluation results
+  const [unifiedResultsData, setUnifiedResultsData] = useState<UnifiedResultsData | null>(null);
+  const [primaryDiagnosticResult, setPrimaryDiagnosticResult] = useState<DiagnosticResult | null>(null);
 
   // Audio preview playback state
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const activeSourceRef = useRef<AudioBufferSourceNode | OscillatorNode | null>(null);
 
+  // Explosion progress ref for GSAP tweening
+  const explosionProgressRef = useRef<number>(0.0);
+  explosionProgressRef.current = explosionProgress;
+
+  // Stream Availability Computations
+  const hasTabularData = tabularSubMode === 'manual' ? (tabularData !== null) : (tabularFile !== null || tabularData !== null);
+  const hasAudioData = audioFile !== null || audioData !== null;
+  const hasVibrationData = vibrationFile !== null || vibrationData !== null;
+
+  const isTabActive = tabularIncluded && hasTabularData;
+  const isAudActive = audioIncluded && hasAudioData;
+  const isVibActive = vibrationIncluded && hasVibrationData;
+
+  const activeStreamsCount = (isTabActive ? 1 : 0) + (isAudActive ? 1 : 0) + (isVibActive ? 1 : 0);
+  const activeStreamNames: string[] = [];
+  if (isTabActive) activeStreamNames.push('Tabular');
+  if (isAudActive) activeStreamNames.push('Audio');
+  if (isVibActive) activeStreamNames.push('Vibration');
+
+  // ============================================================
+  // AUDIO PREVIEW
+  // ============================================================
   const stopAudioPreview = () => {
     if (activeSourceRef.current) {
       try {
@@ -111,6 +154,7 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
       stopAudioPreview();
       return;
     }
+    if (!audioData) return;
 
     try {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -154,96 +198,150 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
     }
   };
 
+  // ============================================================
+  // VIBRATION CHANNEL CHANGE
+  // ============================================================
   const handleVibrationChannelChange = (ch: string) => {
+    if (!vibrationData) return;
+
     if (vibrationData.rawCsvText) {
       const parsed = parseVibrationCsvFull(vibrationData.rawCsvText, vibrationData.sampleName, ch);
       if (parsed.success && parsed.data) {
         setVibrationData(parsed.data);
+        if (unifiedResultsData) {
+          setUnifiedResultsData({
+            ...unifiedResultsData,
+            vibrationData: parsed.data
+          });
+        }
         return;
       }
     }
-    setVibrationData({ ...vibrationData, selectedChannel: ch });
-  };
-
-  // Keep explosion progress synced with GSAP
-  const explosionProgressRef = useRef<number>(0.0);
-  explosionProgressRef.current = explosionProgress;
-
-  // Handle Modality Switch
-  const handleModalityChange = (newModality: InputModality) => {
-    stopAudioPreview();
-    setModality(newModality);
-    setValidationError(null);
-    setDiagnosticResult(null);
-    setShowChartsDrawer(false);
-    if (newModality === 'tabular') {
-      setUploadedFile({
-        name: 'c14ne_cylinder_detonation_run.csv',
-        sizeFormatted: '48.2 KB',
-        isSample: true
-      });
-      setTabularData(TABULAR_PRESETS[1].data);
-    } else if (newModality === 'audio') {
-      setUploadedFile({
-        name: 'rod_knock_severe_transients.wav',
-        sizeFormatted: '624 KB',
-        isSample: true
-      });
-      setAudioData(AUDIO_PRESETS[1].data);
-    } else {
-      setUploadedFile({
-        name: 'crankshaft_radial_imbalance_1x.csv',
-        sizeFormatted: '112 KB',
-        isSample: true
-      });
-      setVibrationData(VIBRATION_PRESETS[1].data);
-    }
-  };
-
-  // Quick Load Sample Dataset
-  const handleLoadSample = (sampleType: 'fault' | 'nominal' = 'fault') => {
-    stopAudioPreview();
-    setValidationError(null);
-    setDiagnosticResult(null);
-    setShowChartsDrawer(false);
-    if (modality === 'tabular') {
-      const preset = sampleType === 'fault' ? TABULAR_PRESETS[1] : TABULAR_PRESETS[0];
-      setTabularData(preset.data);
-      setUploadedFile({
-        name: sampleType === 'fault' ? 'c14ne_detonation_telemetry.csv' : 'c14ne_nominal_baseline.csv',
-        sizeFormatted: '52.4 KB',
-        isSample: true
-      });
-    } else if (modality === 'audio') {
-      const preset = sampleType === 'fault' ? AUDIO_PRESETS[1] : AUDIO_PRESETS[0];
-      setAudioData(preset.data);
-      setUploadedFile({
-        name: sampleType === 'fault' ? 'c14ne_rod_knock_transients.wav' : 'c14ne_nominal_idle.wav',
-        sizeFormatted: '780 KB',
-        isSample: true
-      });
-    } else {
-      const preset = sampleType === 'fault' ? VIBRATION_PRESETS[1] : VIBRATION_PRESETS[0];
-      setVibrationData(preset.data);
-      setUploadedFile({
-        name: sampleType === 'fault' ? 'c14ne_crank_radial_vibe.csv' : 'c14ne_triaxial_baseline.csv',
-        sizeFormatted: '128 KB',
-        isSample: true
+    const updated = { ...vibrationData, selectedChannel: ch };
+    setVibrationData(updated);
+    if (unifiedResultsData) {
+      setUnifiedResultsData({
+        ...unifiedResultsData,
+        vibrationData: updated
       });
     }
   };
 
-  // Handle Real File Upload
+  // ============================================================
+  // QUICK BENCHMARK LOADERS (Part 1.3)
+  // ============================================================
+  const handleLoadNominalBenchmarks = () => {
+    stopAudioPreview();
+    setValidationError(null);
+
+    // Tabular
+    setTabularData(TABULAR_PRESETS[0].data);
+    setManualTabularData(TABULAR_PRESETS[0].data);
+    setTabularFile(null);
+    setTabularFileName('c14ne_nominal_baseline.csv');
+    setTabularFileSize('52.4 KB');
+    setIsTabularSample(true);
+    setTabularIncluded(true);
+
+    // Audio
+    setAudioData(AUDIO_PRESETS[0].data);
+    setAudioFile(null);
+    setAudioFileName('c14ne_nominal_idle.wav');
+    setAudioFileSize('780 KB');
+    setIsAudioSample(true);
+    setAudioIncluded(true);
+
+    // Vibration
+    setVibrationData(VIBRATION_PRESETS[0].data);
+    setVibrationFile(null);
+    setVibrationFileName('c14ne_triaxial_baseline.csv');
+    setVibrationFileSize('128 KB');
+    setIsVibrationSample(true);
+    setVibrationIncluded(true);
+  };
+
+  const handleLoadFaultBenchmarks = () => {
+    stopAudioPreview();
+    setValidationError(null);
+
+    // Tabular
+    setTabularData(TABULAR_PRESETS[1].data);
+    setManualTabularData(TABULAR_PRESETS[1].data);
+    setTabularFile(null);
+    setTabularFileName('c14ne_detonation_telemetry.csv');
+    setTabularFileSize('48.2 KB');
+    setIsTabularSample(true);
+    setTabularIncluded(true);
+
+    // Audio
+    setAudioData(AUDIO_PRESETS[1].data);
+    setAudioFile(null);
+    setAudioFileName('rod_knock_severe_transients.wav');
+    setAudioFileSize('624 KB');
+    setIsAudioSample(true);
+    setAudioIncluded(true);
+
+    // Vibration
+    setVibrationData(VIBRATION_PRESETS[1].data);
+    setVibrationFile(null);
+    setVibrationFileName('crankshaft_radial_imbalance_1x.csv');
+    setVibrationFileSize('112 KB');
+    setIsVibrationSample(true);
+    setVibrationIncluded(true);
+  };
+
+  const handleClearAllStreams = () => {
+    stopAudioPreview();
+    setValidationError(null);
+    setTabularIncluded(false);
+    setAudioIncluded(false);
+    setVibrationIncluded(false);
+  };
+
+  // Individual Stream Preset Loaders
+  const handleLoadTabularPreset = (idx: number) => {
+    const preset = TABULAR_PRESETS[idx];
+    setTabularData(preset.data);
+    setManualTabularData(preset.data);
+    setTabularFile(null);
+    setTabularFileName(preset.title);
+    setTabularFileSize('48 KB');
+    setIsTabularSample(true);
+    setTabularIncluded(true);
+  };
+
+  const handleLoadAudioPreset = (idx: number) => {
+    stopAudioPreview();
+    const preset = AUDIO_PRESETS[idx];
+    setAudioData(preset.data);
+    setAudioFile(null);
+    setAudioFileName(preset.title);
+    setAudioFileSize('640 KB');
+    setIsAudioSample(true);
+    setAudioIncluded(true);
+  };
+
+  const handleLoadVibrationPreset = (idx: number) => {
+    const preset = VIBRATION_PRESETS[idx];
+    setVibrationData(preset.data);
+    setVibrationFile(null);
+    setVibrationFileName(preset.title);
+    setVibrationFileSize('112 KB');
+    setIsVibrationSample(true);
+    setVibrationIncluded(true);
+  };
+
+  // ============================================================
+  // FILE UPLOAD PROCESSOR
+  // ============================================================
   const processUploadedFile = async (file: File) => {
     stopAudioPreview();
     setValidationError(null);
-    setDiagnosticResult(null);
-    setShowChartsDrawer(false);
 
     const sizeKB = Math.round(file.size / 1024);
     const sizeFormatted = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB} KB`;
 
-    if (modality === 'tabular') {
+    if (activeTab === 'tabular') {
       if (!file.name.toLowerCase().endsWith('.csv') && !file.type.includes('csv') && !file.type.includes('text')) {
         setValidationError('Please upload a valid CSV telemetry dataset file.');
         return;
@@ -253,14 +351,18 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
         const parsed = parseTabularCsv(text);
         if (parsed) {
           setTabularData(parsed.data);
-          setUploadedFile({ name: file.name, sizeFormatted, isSample: false, file });
+          setTabularFile(file);
+          setTabularFileName(file.name);
+          setTabularFileSize(sizeFormatted);
+          setIsTabularSample(false);
+          setTabularIncluded(true);
         } else {
           setValidationError('Could not parse required telemetry columns. Ensure format matches the 14-parameter telemetry schema.');
         }
       } catch (err: any) {
         setValidationError(`Failed to read CSV: ${err?.message || 'Unknown error'}`);
       }
-    } else if (modality === 'audio') {
+    } else if (activeTab === 'audio') {
       if (!file.name.toLowerCase().match(/\.(wav|mp3|ogg|m4a|aac|flac)$/)) {
         setValidationError('Please upload a valid audio recording (WAV, MP3, OGG, M4A, FLAC).');
         return;
@@ -268,7 +370,11 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
       try {
         const analyzed = await analyzeAudioFile(file);
         setAudioData(analyzed);
-        setUploadedFile({ name: file.name, sizeFormatted, isSample: false, file });
+        setAudioFile(file);
+        setAudioFileName(file.name);
+        setAudioFileSize(sizeFormatted);
+        setIsAudioSample(false);
+        setAudioIncluded(true);
       } catch (err: any) {
         console.error('Audio decoding error', err);
         setValidationError(`Unable to decode audio recording: ${err?.message || 'Unsupported format'}. Please ensure file is a valid audio file.`);
@@ -284,7 +390,11 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
         const parsed = parseVibrationCsvFull(text, file.name);
         if (parsed.success && parsed.data) {
           setVibrationData(parsed.data);
-          setUploadedFile({ name: file.name, sizeFormatted, isSample: false, file });
+          setVibrationFile(file);
+          setVibrationFileName(file.name);
+          setVibrationFileSize(sizeFormatted);
+          setIsVibrationSample(false);
+          setVibrationIncluded(true);
         } else {
           setValidationError(parsed.error || 'Failed to parse vibration CSV file. Missing valid Time or Channel columns.');
         }
@@ -295,7 +405,6 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
     }
   };
 
-  // Drag and drop handlers
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(true);
@@ -313,22 +422,14 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
     }
   };
 
-  // Run Analysis Workflow
+  // ============================================================
+  // UNIFIED EXECUTION ENGINE (Concurrent Promise.allSettled)
+  // ============================================================
   const handleAnalyzeEngine = () => {
     setValidationError(null);
 
-    // Validate active data
-    let validation: ValidationResult = { isValid: true };
-    if (modality === 'tabular') {
-      validation = validateTabularData(tabularData);
-    } else if (modality === 'audio') {
-      validation = validateAudioData(audioData);
-    } else {
-      validation = validateVibrationData(vibrationData);
-    }
-
-    if (!validation.isValid) {
-      setValidationError(validation.errorMessage || 'Invalid data payload. Please upload or load a sample dataset.');
+    if (activeStreamsCount === 0) {
+      setValidationError('Please configure and include at least one diagnostic data stream (Tabular, Audio, or Vibration) to analyze.');
       return;
     }
 
@@ -336,10 +437,9 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
     setLabState('ANALYZING');
     setAnalysisStep(1);
 
-    // Step 2 at 450ms
+    // Step 2 at 400ms: Animate 3D Engine Explosion
     setTimeout(() => {
       setAnalysisStep(2);
-      // Smoothly animate the SAME 3D engine from assembled (0.0) to exploded (0.65)
       const tweenObj = { val: explosionProgressRef.current };
       gsap.to(tweenObj, {
         val: 0.65,
@@ -347,71 +447,320 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
         ease: 'power2.out',
         onUpdate: () => setExplosionProgress(tweenObj.val)
       });
-    }, 450);
+    }, 400);
 
-    // Step 3 at 950ms
+    // Step 3 at 900ms
     setTimeout(() => {
       setAnalysisStep(3);
-    }, 950);
+    }, 900);
 
-    // Step 4 & Final Verdict at 1500ms
+    // Step 4 & Final Verdict at 1400ms
     setTimeout(async () => {
       setAnalysisStep(4);
-      let result: DiagnosticResult;
 
-      try {
-        if (modality === 'tabular') {
-          if (uploadedFile?.file) {
-            result = await evaluateTabularDataViaApi(uploadedFile.file);
-          } else {
-            result = await evaluateTabularDataViaApi(tabularData);
-          }
-        } else if (modality === 'audio') {
-          if (uploadedFile?.file) {
-            result = await evaluateAudioDataViaApi(uploadedFile.file);
-          } else {
-            result = evaluateAudioData(audioData);
-          }
-        } else {
-          if (uploadedFile?.file) {
-            result = await evaluateVibrationDataViaApi(uploadedFile.file);
-          } else {
-            result = evaluateVibrationData(vibrationData);
-          }
+      // --- Stream 1: Tabular Promise ---
+      const tabularPromise = (async (): Promise<{ output: StreamOutputResult; diag?: DiagnosticResult }> => {
+        if (!isTabActive) {
+          return {
+            output: {
+              status: 'NOT_PROVIDED',
+              summary: 'Tabular sensor stream was not provided or excluded from this diagnostic run.'
+            }
+          };
         }
-      } catch (err) {
-        console.warn('Backend inference API unavailable, falling back to simulated evaluator:', err);
-        if (modality === 'tabular') {
-          result = evaluateTabularData(tabularData);
-        } else if (modality === 'audio') {
-          result = evaluateAudioData(audioData);
-        } else {
-          result = evaluateVibrationData(vibrationData);
+
+        try {
+          let res: DiagnosticResult;
+          if (tabularFile && tabularSubMode === 'csv') {
+            res = await evaluateTabularDataViaApi(tabularFile);
+          } else if (tabularData) {
+            res = await evaluateTabularDataViaApi(tabularData);
+          } else {
+            return { output: { status: 'NOT_PROVIDED', summary: 'No tabular dataset supplied.' } };
+          }
+
+          return {
+            output: {
+              status: 'SUCCESS',
+              rawPrediction: res.rawPredictedClass ?? res.faultTitle,
+              confidence: (res.confidencePercent || 0) / 100,
+              confidenceType: 'Softmax probability',
+              summary: res.faultSummary,
+              metadata: {
+                'Predicted Class': res.rawPredictedClass ?? res.faultTitle,
+                'Fault Attribution': res.faultTitle,
+                'Confidence': `${res.confidencePercent}%`,
+                'Affected Component': res.faultyComponentId ? COMPONENT_METADATA[res.faultyComponentId]?.name : 'None',
+              }
+            },
+            diag: res
+          };
+        } catch (err: any) {
+          // Fallback to local deterministic evaluator if API is unreachable
+          try {
+            if (tabularData) {
+              const localRes = evaluateTabularData(tabularData);
+              return {
+                output: {
+                  status: 'SUCCESS',
+                  rawPrediction: localRes.rawPredictedClass ?? localRes.faultTitle,
+                  confidence: (localRes.confidencePercent || 0) / 100,
+                  confidenceType: 'Local heuristic fallback',
+                  summary: localRes.faultSummary,
+                  metadata: {
+                    'Predicted Class': localRes.rawPredictedClass ?? localRes.faultTitle,
+                    'Fault Attribution': localRes.faultTitle,
+                    'Confidence': `${localRes.confidencePercent}%`,
+                  }
+                },
+                diag: localRes
+              };
+            }
+          } catch {}
+          return {
+            output: {
+              status: 'FAILED',
+              error: err?.message || 'Tabular inference failed'
+            }
+          };
         }
-      }
+      })();
 
-      setDiagnosticResult(result);
-      setIsAutoRotating(false);
+      // --- Stream 2: Audio Promise ---
+      const audioPromise = (async (): Promise<{ output: StreamOutputResult; diag?: DiagnosticResult }> => {
+        if (!isAudActive) {
+          return {
+            output: {
+              status: 'NOT_PROVIDED',
+              summary: 'Acoustic audio stream was not provided or excluded from this diagnostic run.'
+            }
+          };
+        }
 
-      // Highlight faulty component if mapped
-      if (result.faultyComponentId && COMPONENT_METADATA[result.faultyComponentId]) {
-        setHighlightedComponentId(result.faultyComponentId);
-        setSelectedComponentId(result.faultyComponentId);
+        try {
+          let res: DiagnosticResult;
+          if (audioFile) {
+            res = await evaluateAudioDataViaApi(audioFile);
+          } else if (audioData) {
+            res = evaluateAudioData(audioData);
+          } else {
+            return { output: { status: 'NOT_PROVIDED', summary: 'No audio recording supplied.' } };
+          }
+
+          return {
+            output: {
+              status: 'SUCCESS',
+              rawPrediction: res.rawPredictedClass ?? res.faultTitle,
+              confidence: (res.confidencePercent || 0) / 100,
+              confidenceType: 'Acoustic feature classifier',
+              summary: res.faultSummary,
+              metadata: {
+                'Predicted Class': res.rawPredictedClass ?? res.faultTitle,
+                'Fault Attribution': res.faultTitle,
+                'Confidence': `${res.confidencePercent}%`,
+                'Dominant Harmonic': `${audioData?.dominantHarmonicHz?.toFixed(1) || 'N/A'} Hz`,
+                'Peak Level': `${audioData?.peakDb?.toFixed(1) || 'N/A'} dBFS`,
+              }
+            },
+            diag: res
+          };
+        } catch (err: any) {
+          if (audioData) {
+            const localRes = evaluateAudioData(audioData);
+            return {
+              output: {
+                status: 'SUCCESS',
+                rawPrediction: localRes.rawPredictedClass ?? localRes.faultTitle,
+                confidence: (localRes.confidencePercent || 0) / 100,
+                confidenceType: 'Local heuristic fallback',
+                summary: localRes.faultSummary,
+              },
+              diag: localRes
+            };
+          }
+          return {
+            output: {
+              status: 'FAILED',
+              error: err?.message || 'Audio inference failed'
+            }
+          };
+        }
+      })();
+
+      // --- Stream 3: Vibration Promise ---
+      const vibrationPromise = (async (): Promise<{ output: StreamOutputResult; diag?: DiagnosticResult }> => {
+        if (!isVibActive) {
+          return {
+            output: {
+              status: 'NOT_PROVIDED',
+              summary: 'Vibration accelerometry stream was not provided or excluded from this diagnostic run.'
+            }
+          };
+        }
+
+        try {
+          let res: DiagnosticResult;
+          if (vibrationFile) {
+            res = await evaluateVibrationDataViaApi(vibrationFile);
+          } else if (vibrationData) {
+            res = evaluateVibrationData(vibrationData);
+          } else {
+            return { output: { status: 'NOT_PROVIDED', summary: 'No vibration timeseries supplied.' } };
+          }
+
+          return {
+            output: {
+              status: 'SUCCESS',
+              rawPrediction: res.rawPredictedClass ?? res.faultTitle,
+              confidence: (res.confidencePercent || 0) / 100,
+              confidenceType: 'Vibration dynamics classifier',
+              summary: res.faultSummary,
+              metadata: {
+                'Predicted Class': res.rawPredictedClass ?? res.faultTitle,
+                'Fault Attribution': res.faultTitle,
+                'Confidence': `${res.confidencePercent}%`,
+                'RMS Amplitude': `${vibrationData?.rmsAccelerationG?.toFixed(3) || 'N/A'} units`,
+                'Dominant Frequency': `${vibrationData?.dominantOrderHz?.toFixed(1) || 'N/A'} Hz`,
+              }
+            },
+            diag: res
+          };
+        } catch (err: any) {
+          if (vibrationData) {
+            const localRes = evaluateVibrationData(vibrationData);
+            return {
+              output: {
+                status: 'SUCCESS',
+                rawPrediction: localRes.rawPredictedClass ?? localRes.faultTitle,
+                confidence: (localRes.confidencePercent || 0) / 100,
+                confidenceType: 'Local heuristic fallback',
+                summary: localRes.faultSummary,
+              },
+              diag: localRes
+            };
+          }
+          return {
+            output: {
+              status: 'FAILED',
+              error: err?.message || 'Vibration inference failed'
+            }
+          };
+        }
+      })();
+
+      // --- Stream 4: Tabular Summary Promise (Part 3) ---
+      const summaryPromise = (async (): Promise<TabularDataSummary | null> => {
+        if (!isTabActive) return null;
+        try {
+          if (tabularSubMode === 'csv' && tabularFile) {
+            const text = await tabularFile.text();
+            return summarizeTabularCsv(text, tabularFileName);
+          } else if (tabularData) {
+            return summarizeManualTabularData(tabularData as unknown as Record<string, number>);
+          }
+        } catch (e) {
+          console.error('Error generating tabular summary', e);
+        }
+        return null;
+      })();
+
+      // Concurrently settle all promises
+      const [tabSettled, audSettled, vibSettled, summarySettled] = await Promise.allSettled([
+        tabularPromise,
+        audioPromise,
+        vibrationPromise,
+        summaryPromise
+      ]);
+
+      const tabResult = tabSettled.status === 'fulfilled'
+        ? tabSettled.value
+        : { output: { status: 'FAILED' as const, error: (tabSettled.reason as Error)?.message || 'Tabular failed' } };
+
+      const audResult = audSettled.status === 'fulfilled'
+        ? audSettled.value
+        : { output: { status: 'FAILED' as const, error: (audSettled.reason as Error)?.message || 'Audio failed' } };
+
+      const vibResult = vibSettled.status === 'fulfilled'
+        ? vibSettled.value
+        : { output: { status: 'FAILED' as const, error: (vibSettled.reason as Error)?.message || 'Vibration failed' } };
+
+      const tabularSummary: TabularDataSummary | null = summarySettled.status === 'fulfilled'
+        ? summarySettled.value
+        : null;
+
+      // Compute Engine Health Index (EHI) using exact Part 6 formula & weights
+      const healthIndex = calculateEngineHealthIndex({
+        tabularPrediction: tabResult.output.status === 'SUCCESS' ? tabResult.output.rawPrediction : null,
+        audioPrediction: audResult.output.status === 'SUCCESS' ? audResult.output.rawPrediction : null,
+        vibrationPrediction: vibResult.output.status === 'SUCCESS' ? vibResult.output.rawPrediction : null,
+      });
+
+      // Assemble complete Unified Results Data structure
+      const unified: UnifiedResultsData = {
+        timestamp: new Date().toISOString(),
+        outputs: {
+          tabular: tabResult.output,
+          audio: audResult.output,
+          vibration: vibResult.output,
+        },
+        tabularSummary,
+        audioData: isAudActive ? audioData : null,
+        vibrationData: isVibActive ? vibrationData : null,
+        healthIndex,
+        tabularError: tabResult.output.status === 'FAILED' ? tabResult.output.error : null,
+        audioError: audResult.output.status === 'FAILED' ? audResult.output.error : null,
+        vibrationError: vibResult.output.status === 'FAILED' ? vibResult.output.error : null,
+      };
+
+      setUnifiedResultsData(unified);
+
+      // Determine primary diagnosed fault for 3D engine canvas component highlighting
+      const primaryDiag = tabResult.diag || vibResult.diag || audResult.diag || null;
+      setPrimaryDiagnosticResult(primaryDiag);
+
+      if (primaryDiag?.faultyComponentId && COMPONENT_METADATA[primaryDiag.faultyComponentId]) {
+        setHighlightedComponentId(primaryDiag.faultyComponentId);
+        setSelectedComponentId(primaryDiag.faultyComponentId);
       } else {
         setHighlightedComponentId(null);
         setSelectedComponentId(null);
       }
 
-      // Enter RESULT State
+      setIsAutoRotating(false);
+
+      // Transition to RESULT state
       setTimeout(() => {
         setLabState('RESULT');
-      }, 400);
-    }, 1500);
+        setResultViewMode('dashboard');
+      }, 350);
+    }, 1400);
   };
 
   // Reset to Idle & Reassemble Engine
   const handleRunAnotherTest = () => {
-    // Smoothly reassemble engine back to 0.0
+    stopAudioPreview();
+    const tweenObj = { val: explosionProgressRef.current };
+    gsap.to(tweenObj, {
+      val: 0.0,
+      duration: 1.2,
+      ease: 'power2.inOut',
+      onUpdate: () => setExplosionProgress(tweenObj.val),
+      onComplete: () => {
+        setHighlightedComponentId(null);
+        setSelectedComponentId(null);
+        setIsAutoRotating(true);
+      }
+    });
+
+    setLabState('UPLOAD');
+    setResultViewMode('dashboard');
+    setShowChartsDrawer(false);
+    setUnifiedResultsData(null);
+    setPrimaryDiagnosticResult(null);
+  };
+
+  const handleEditInputs = () => {
+    stopAudioPreview();
     const tweenObj = { val: explosionProgressRef.current };
     gsap.to(tweenObj, {
       val: 0.0,
@@ -431,7 +780,9 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#08090A] text-[#F1F2F3] font-sans select-none">
-      {/* 1. Full-Screen 3D Engine Canvas (Dominant Visual Layer) */}
+      {/* ============================================================ */}
+      {/* 1. FULL-SCREEN 3D ENGINE CANVAS (Visual Background Layer)   */}
+      {/* ============================================================ */}
       <div className="absolute inset-0 w-full h-full z-0">
         <TestingEngineCanvas
           explosionProgress={explosionProgress}
@@ -447,11 +798,16 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
         />
       </div>
 
-      {/* 2. Top Header Navigation Bar */}
-      <header className="absolute top-0 left-0 right-0 z-30 px-4 sm:px-8 py-3.5 flex items-center justify-between pointer-events-none">
+      {/* ============================================================ */}
+      {/* 2. TOP HEADER NAVIGATION BAR                                 */}
+      {/* ============================================================ */}
+      <header className="absolute top-0 left-0 right-0 z-40 px-4 sm:px-8 py-3.5 flex items-center justify-between pointer-events-none">
         <div className="flex items-center gap-3 sm:gap-4 pointer-events-auto">
           <button
-            onClick={onBackToLanding}
+            onClick={() => {
+              stopAudioPreview();
+              onBackToLanding();
+            }}
             className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#101214]/85 hover:bg-[#171A1D] backdrop-blur-md border border-[#292D31] text-xs font-mono text-[#A4A9AF] hover:text-[#F1F2F3] transition shadow-lg cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -467,443 +823,841 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
           </div>
         </div>
 
-        {/* Status Indicator */}
-        <div className="pointer-events-auto hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#101214]/85 backdrop-blur-md border border-[#292D31] text-xs font-mono shadow-lg">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[#737A82]">Inference:</span>
-          <span className="text-[#F1F2F3] font-medium">Kinematic Edge v2.4</span>
-        </div>
-      </header>
-
-      {/* 3. Floating Left-Side Diagnostic Card (Matching Mockup Reference) */}
-      <div className="absolute top-16 sm:top-20 left-4 sm:left-8 z-30 w-[360px] sm:w-[420px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-5.5rem)] overflow-y-auto custom-scrollbar pointer-events-auto">
-        <div className="bg-[#101214]/90 backdrop-blur-md border border-[#292D31] rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4">
-          {/* Header Title */}
-          <div>
-            <div className="text-[10px] font-mono text-[#D66A32] font-bold tracking-widest uppercase flex items-center gap-1.5">
-              <span>DIAGNOSTIC LAB</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-[#D66A32]" />
-            </div>
-            <h2 className="text-xl sm:text-2xl font-black text-[#F1F2F3] tracking-tight mt-0.5">
-              {labState === 'RESULT' ? 'Diagnostic Result' : 'Upload Engine Data'}
-            </h2>
-          </div>
-
-          {/* Validation Error Banner */}
-          {validationError && (
-            <div className="p-3 rounded-xl bg-red-950/60 border border-red-500/40 text-red-200 text-xs flex items-start gap-2 animate-shake">
-              <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-              <p className="text-[11px] leading-relaxed">{validationError}</p>
-            </div>
-          )}
-
-          {/* ============================================================ */}
-          {/* STATE 1: UPLOAD STATE */}
-          {/* ============================================================ */}
-          {labState === 'UPLOAD' && (
-            <div className="space-y-4">
-              {/* Modality Tabs */}
-              <div className="grid grid-cols-3 gap-1.5 bg-[#0C0E10] p-1 rounded-xl border border-[#292D31]">
-                <button
-                  onClick={() => handleModalityChange('tabular')}
-                  className={`py-2 px-1 text-center rounded-lg text-[11px] font-mono font-medium transition cursor-pointer ${
-                    modality === 'tabular'
-                      ? 'bg-[#171A1D] text-[#F1F2F3] border border-[#D66A32] shadow-sm'
-                      : 'text-[#737A82] hover:text-[#A4A9AF]'
-                  }`}
-                >
-                  <Sliders className="w-3.5 h-3.5 mx-auto mb-1 text-[#D66A32]" />
-                  <span>Tabular</span>
-                </button>
-                <button
-                  onClick={() => handleModalityChange('audio')}
-                  className={`py-2 px-1 text-center rounded-lg text-[11px] font-mono font-medium transition cursor-pointer ${
-                    modality === 'audio'
-                      ? 'bg-[#171A1D] text-[#F1F2F3] border border-[#D66A32] shadow-sm'
-                      : 'text-[#737A82] hover:text-[#A4A9AF]'
-                  }`}
-                >
-                  <Waves className="w-3.5 h-3.5 mx-auto mb-1 text-[#D66A32]" />
-                  <span>Audio</span>
-                </button>
-                <button
-                  onClick={() => handleModalityChange('vibration')}
-                  className={`py-2 px-1 text-center rounded-lg text-[11px] font-mono font-medium transition cursor-pointer ${
-                    modality === 'vibration'
-                      ? 'bg-[#171A1D] text-[#F1F2F3] border border-[#D66A32] shadow-sm'
-                      : 'text-[#737A82] hover:text-[#A4A9AF]'
-                  }`}
-                >
-                  <Activity className="w-3.5 h-3.5 mx-auto mb-1 text-[#D66A32]" />
-                  <span>Vibration</span>
-                </button>
-              </div>
-
-              {/* Drag & Drop Upload Zone */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={modality === 'audio' ? '.wav,.mp3,.ogg' : '.csv'}
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files.length > 0) {
-                    processUploadedFile(e.target.files[0]);
-                  }
-                }}
-              />
-
-              <div
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition ${
-                  isDragOver
-                    ? 'border-[#D66A32] bg-[#D66A32]/10'
-                    : 'border-[#292D31] hover:border-[#737A82] bg-[#0C0E10]/50'
+        {/* Header Right Actions */}
+        <div className="pointer-events-auto flex items-center gap-2.5">
+          {labState === 'RESULT' && (
+            <div className="flex items-center bg-[#101214]/90 backdrop-blur-md border border-[#292D31] p-1 rounded-xl shadow-lg">
+              <button
+                onClick={() => setResultViewMode('dashboard')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono transition cursor-pointer ${
+                  resultViewMode === 'dashboard'
+                    ? 'bg-[#171A1D] text-[#F1F2F3] border border-[#D66A32]/60 font-semibold shadow-sm'
+                    : 'text-[#737A82] hover:text-[#A4A9AF]'
                 }`}
               >
-                <UploadCloud className="w-8 h-8 text-[#D66A32] mx-auto mb-2" />
-                <p className="text-xs font-medium text-[#F1F2F3]">
-                  Drag and drop your {modality === 'audio' ? 'WAV/MP3' : 'CSV'} file here
-                </p>
-                <p className="text-[10px] text-[#737A82] font-mono mt-1">
-                  or <span className="text-[#D66A32] underline">click to browse</span> (max 50MB)
-                </p>
-              </div>
-
-              {/* Uploaded File Info Card */}
-              {uploadedFile && (
-                <div className="flex items-center justify-between p-3 rounded-xl bg-[#0C0E10] border border-[#292D31] text-xs">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <FileText className="w-4 h-4 text-[#D66A32] flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-mono text-[#F1F2F3] truncate text-[11px] font-semibold">
-                        {uploadedFile.name}
-                      </p>
-                      <p className="text-[10px] text-[#737A82] font-mono">
-                        {uploadedFile.sizeFormatted} • {uploadedFile.isSample ? 'Calibrated Test Dataset' : 'User Upload'}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      stopAudioPreview();
-                      setDiagnosticResult(null);
-                      setShowChartsDrawer(false);
-                      setUploadedFile(null);
-                      if (modality === 'tabular') {
-                        setTabularData(TABULAR_PRESETS[1].data);
-                      } else if (modality === 'audio') {
-                        setAudioData(AUDIO_PRESETS[1].data);
-                      } else {
-                        setVibrationData(VIBRATION_PRESETS[1].data);
-                      }
-                    }}
-                    className="p-1 rounded-md text-[#737A82] hover:text-[#F1F2F3] hover:bg-[#171A1D] transition cursor-pointer"
-                    title="Remove file"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-
-              {/* Modality Specific Upload Previews & Controls */}
-              {modality === 'vibration' && (
-                <div className="space-y-2 pt-1">
-                  {/* Quality / Jitter Warning Banner */}
-                  {vibrationData.qualityWarning && (
-                    <div className="p-2.5 rounded-lg bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs flex items-start gap-2">
-                      <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                      <p className="text-[11px] leading-relaxed font-mono">{vibrationData.qualityWarning}</p>
-                    </div>
-                  )}
-
-                  {/* Channel Selection */}
-                  {vibrationData.availableChannels && vibrationData.availableChannels.length > 1 && (
-                    <div className="bg-[#0C0E10] p-2.5 rounded-xl border border-[#292D31] space-y-1.5">
-                      <div className="flex items-center justify-between text-[10px] font-mono">
-                        <span className="text-[#A4A9AF]">Measured Channel:</span>
-                        <span className="text-[#D66A32] font-semibold">{vibrationData.selectedChannel || 'Channel 1'}</span>
-                      </div>
-                      <div className="grid grid-cols-4 gap-1">
-                        {vibrationData.availableChannels.map((ch) => {
-                          const isActive = (vibrationData.selectedChannel || vibrationData.availableChannels![0]) === ch;
-                          return (
-                            <button
-                              key={ch}
-                              onClick={() => handleVibrationChannelChange(ch)}
-                              className={`py-1 rounded text-center text-[10px] font-mono transition cursor-pointer ${
-                                isActive
-                                  ? 'bg-[#D66A32] text-white font-bold'
-                                  : 'bg-[#171A1D] border border-[#292D31] text-[#A4A9AF] hover:text-[#F1F2F3]'
-                              }`}
-                            >
-                              {ch}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Quick Metric Pills */}
-                  <div className="grid grid-cols-2 gap-1.5 text-[10px] font-mono">
-                    <div className="bg-[#0C0E10] p-2 rounded-lg border border-[#292D31]">
-                      <span className="text-[#737A82] block">RMS Amplitude:</span>
-                      <span className="text-[#F1F2F3] font-bold">{vibrationData.rmsAccelerationG.toFixed(4)} units</span>
-                    </div>
-                    <div className="bg-[#0C0E10] p-2 rounded-lg border border-[#292D31]">
-                      <span className="text-[#737A82] block">Dominant Frequency:</span>
-                      <span className="text-[#D66A32] font-bold">{vibrationData.dominantOrderHz.toFixed(1)} Hz</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {modality === 'audio' && (
-                <div className="bg-[#0C0E10] p-2.5 rounded-xl border border-[#292D31] flex items-center justify-between">
-                  <div className="min-w-0 text-[10px] font-mono">
-                    <span className="text-[#737A82] block">Dominant / Peak:</span>
-                    <span className="text-[#D66A32] font-bold">{audioData.dominantHarmonicHz.toFixed(1)} Hz</span>
-                    <span className="text-[#737A82]"> • {audioData.peakDb.toFixed(1)} dBFS</span>
-                  </div>
-                  <button
-                    onClick={handleToggleAudioPreview}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 transition cursor-pointer ${
-                      isPlayingAudio
-                        ? 'bg-[#D66A32] text-white shadow-sm'
-                        : 'bg-[#171A1D] hover:bg-[#292D31] text-[#F1F2F3] border border-[#292D31]'
-                    }`}
-                  >
-                    {isPlayingAudio ? (
-                      <>
-                        <span className="w-2 h-2 rounded-sm bg-white" /> Stop
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-3 h-3 fill-current" /> Audition
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {/* Quick Load Sample Buttons */}
-              <div className="flex items-center justify-between pt-1 text-[11px] font-mono">
-                <span className="text-[#737A82]">Quick Test Datasets:</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleLoadSample('fault')}
-                    className="text-[#D66A32] hover:text-[#D66A32]/80 underline cursor-pointer font-semibold"
-                  >
-                    Load Fault Case
-                  </button>
-                  <span className="text-[#292D31]">•</span>
-                  <button
-                    onClick={() => handleLoadSample('nominal')}
-                    className="text-[#A4A9AF] hover:text-[#F1F2F3] underline cursor-pointer"
-                  >
-                    Load Nominal
-                  </button>
-                </div>
-              </div>
-
-              {/* Primary Action Button */}
+                <BarChart3 className="w-3.5 h-3.5 text-[#D66A32]" />
+                <span>Diagnostic Report</span>
+              </button>
               <button
-                onClick={handleAnalyzeEngine}
-                className="w-full py-3.5 px-4 rounded-xl bg-[#D66A32] hover:bg-[#D66A32]/90 text-white font-mono font-bold text-xs tracking-wider uppercase transition flex items-center justify-center gap-2 shadow-lg shadow-[#D66A32]/20 cursor-pointer"
+                onClick={() => setResultViewMode('cad')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono transition cursor-pointer ${
+                  resultViewMode === 'cad'
+                    ? 'bg-[#171A1D] text-[#F1F2F3] border border-[#D66A32]/60 font-semibold shadow-sm'
+                    : 'text-[#737A82] hover:text-[#A4A9AF]'
+                }`}
               >
-                <Play className="w-4 h-4 fill-current" />
-                <span>Analyze Engine →</span>
+                <Box className="w-3.5 h-3.5 text-[#D66A32]" />
+                <span>3D Engine View</span>
               </button>
             </div>
           )}
 
-          {/* ============================================================ */}
-          {/* STATE 2: ANALYZING STATE */}
-          {/* ============================================================ */}
-          {labState === 'ANALYZING' && (
-            <div className="space-y-4 py-2">
-              <div className="flex items-center gap-3 border-b border-[#292D31] pb-3">
-                <Cpu className="w-5 h-5 text-[#D66A32] animate-spin" />
-                <div>
-                  <h4 className="font-bold text-[#F1F2F3] text-sm">Processing Dataset</h4>
-                  <p className="text-[10px] text-[#737A82] font-mono">C14NE Kinematic Model Inference</p>
-                </div>
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#101214]/85 backdrop-blur-md border border-[#292D31] text-xs font-mono shadow-lg">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[#737A82]">Inference:</span>
+            <span className="text-[#F1F2F3] font-medium">Kinematic Edge v2.4</span>
+          </div>
+        </div>
+      </header>
+
+      {/* ============================================================ */}
+      {/* 3. RESULT STATE: FULL DASHBOARD VIEW (Part 8 Exact Order)    */}
+      {/* ============================================================ */}
+      {labState === 'RESULT' && resultViewMode === 'dashboard' && unifiedResultsData && (
+        <div className="absolute inset-0 top-14 z-30 overflow-y-auto px-4 sm:px-8 py-6 custom-scrollbar">
+          <div className="max-w-7xl mx-auto">
+            <UnifiedResultsDashboard
+              data={unifiedResultsData}
+              onEditInputs={handleEditInputs}
+              onRunAnotherTest={handleRunAnotherTest}
+              onSelectVibrationChannel={handleVibrationChannelChange}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* 4. FLOATING CONTROL PANEL (UPLOAD / ANALYZING / 3D CAD VIEW)  */}
+      {/* ============================================================ */}
+      {!(labState === 'RESULT' && resultViewMode === 'dashboard') && (
+        <div className="absolute top-16 sm:top-20 left-4 sm:left-8 z-30 w-[380px] sm:w-[460px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-5.5rem)] overflow-y-auto custom-scrollbar pointer-events-auto">
+          <div className="bg-[#101214]/90 backdrop-blur-md border border-[#292D31] rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4">
+
+            {/* Header Title */}
+            <div>
+              <div className="text-[10px] font-mono text-[#D66A32] font-bold tracking-widest uppercase flex items-center gap-1.5">
+                <span>MULTI-STREAM DIAGNOSTIC WORKSPACE</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D66A32]" />
               </div>
-
-              {/* Progress Checklist */}
-              <div className="space-y-3 font-mono text-xs">
-                {/* Step 1 */}
-                <div className="flex items-center gap-2.5">
-                  {analysisStep >= 1 ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  ) : (
-                    <div className="w-4 h-4 rounded-full border border-[#292D31] flex-shrink-0" />
-                  )}
-                  <span className={analysisStep >= 1 ? 'text-[#F1F2F3]' : 'text-[#737A82]'}>
-                    Validating dataset integrity
-                  </span>
-                </div>
-
-                {/* Step 2 */}
-                <div className="flex items-center gap-2.5">
-                  {analysisStep > 2 ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  ) : analysisStep === 2 ? (
-                    <div className="w-4 h-4 rounded-full border-2 border-[#D66A32] border-t-transparent animate-spin flex-shrink-0" />
-                  ) : (
-                    <div className="w-4 h-4 rounded-full border border-[#292D31] flex-shrink-0" />
-                  )}
-                  <span className={analysisStep >= 2 ? 'text-[#F1F2F3]' : 'text-[#737A82]'}>
-                    Running diagnostic inference
-                  </span>
-                </div>
-
-                {/* Step 3 */}
-                <div className="flex items-center gap-2.5">
-                  {analysisStep > 3 ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  ) : analysisStep === 3 ? (
-                    <div className="w-4 h-4 rounded-full border-2 border-[#D66A32] border-t-transparent animate-spin flex-shrink-0" />
-                  ) : (
-                    <div className="w-4 h-4 rounded-full border border-[#292D31] flex-shrink-0" />
-                  )}
-                  <span className={analysisStep >= 3 ? 'text-[#F1F2F3]' : 'text-[#737A82]'}>
-                    Exploding 3D engine & mapping components
-                  </span>
-                </div>
-
-                {/* Step 4 */}
-                <div className="flex items-center gap-2.5">
-                  {analysisStep >= 4 ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  ) : (
-                    <div className="w-4 h-4 rounded-full border border-[#292D31] flex-shrink-0" />
-                  )}
-                  <span className={analysisStep >= 4 ? 'text-[#F1F2F3]' : 'text-[#737A82]'}>
-                    Generating fault attribution report
-                  </span>
-                </div>
-              </div>
-
-              <div className="pt-2 text-center">
-                <span className="text-[11px] font-mono text-[#D66A32] animate-pulse">
-                  Dollying 3D camera to inspection view...
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* ============================================================ */}
-          {/* STATE 3: RESULT STATE */}
-          {/* ============================================================ */}
-          {labState === 'RESULT' && diagnosticResult && (
-            <div className="space-y-4">
-              {/* Verdict Banner */}
-              <div
-                className={`p-3 rounded-xl border flex items-center justify-between text-xs font-mono font-bold ${
-                  diagnosticResult.status === 'FAULT'
-                    ? 'bg-red-950/40 border-red-500/50 text-red-200'
-                    : diagnosticResult.status === 'WARNING'
-                    ? 'bg-amber-950/40 border-amber-500/50 text-amber-200'
-                    : 'bg-emerald-950/40 border-emerald-500/50 text-emerald-200'
-                }`}
-              >
-                <span>[{diagnosticResult.status === 'NOMINAL' ? 'NOMINAL HEALTH' : 'FAULT DETECTED'}]</span>
-                <span>{diagnosticResult.confidencePercent}% CONFIDENCE</span>
-              </div>
-
-              {/* Title & Summary */}
-              <div>
-                <h4 className="font-bold text-[#F1F2F3] text-sm sm:text-base leading-snug">
-                  {diagnosticResult.faultTitle}
-                </h4>
-                <p className="text-[11px] text-[#A4A9AF] leading-relaxed mt-1">
-                  {diagnosticResult.faultSummary}
+              <h2 className="text-xl sm:text-2xl font-black text-[#F1F2F3] tracking-tight mt-0.5">
+                {labState === 'RESULT' ? 'Diagnostic Verdict' : 'Configure Engine Inputs'}
+              </h2>
+              {labState === 'UPLOAD' && (
+                <p className="text-[11px] text-[#737A82] font-mono mt-0.5">
+                  Supply 1, 2, or all 3 streams. Universal engine analysis will evaluate active streams.
                 </p>
-              </div>
+              )}
+            </div>
 
-              {/* Affected Component Badge */}
-              {diagnosticResult.faultyComponentId && COMPONENT_METADATA[diagnosticResult.faultyComponentId] && (
-                <div className="p-3 rounded-xl bg-[#0C0E10] border border-[#D66A32]/40 flex items-center justify-between">
+            {/* Validation Error Banner */}
+            {validationError && (
+              <div className="p-3 rounded-xl bg-red-950/60 border border-red-500/40 text-red-200 text-xs flex items-start gap-2 animate-shake">
+                <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                <p className="text-[11px] leading-relaxed">{validationError}</p>
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* STATE 1: UPLOAD & STREAM CONFIGURATION WORKSPACE            */}
+            {/* ============================================================ */}
+            {labState === 'UPLOAD' && (
+              <div className="space-y-4">
+
+                {/* Quick Benchmark Loaders (Part 1.3) */}
+                <div className="bg-[#0C0E10] p-2.5 rounded-xl border border-[#292D31] space-y-2">
+                  <div className="flex items-center justify-between text-[10px] font-mono text-[#737A82]">
+                    <span className="flex items-center gap-1 uppercase tracking-wider font-semibold">
+                      <Zap className="w-3 h-3 text-[#D66A32]" />
+                      Quick Benchmark Loaders:
+                    </span>
+                    <button
+                      onClick={handleClearAllStreams}
+                      className="hover:text-red-400 transition cursor-pointer flex items-center gap-0.5"
+                    >
+                      <Trash2 className="w-2.5 h-2.5" />
+                      Clear All
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                    <button
+                      onClick={handleLoadNominalBenchmarks}
+                      className="py-1.5 px-2.5 rounded-lg bg-[#171A1D] hover:bg-[#292D31] border border-[#292D31] hover:border-emerald-500/40 text-[#A4A9AF] hover:text-emerald-300 transition text-[11px] font-medium flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Nominal (All 3)</span>
+                    </button>
+                    <button
+                      onClick={handleLoadFaultBenchmarks}
+                      className="py-1.5 px-2.5 rounded-lg bg-[#171A1D] hover:bg-[#292D31] border border-[#292D31] hover:border-[#D66A32]/60 text-[#A4A9AF] hover:text-[#F1F2F3] transition text-[11px] font-medium flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5 text-[#D66A32]" />
+                      <span>Faults (All 3)</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Stream Switcher Tabs with Live Status Badges */}
+                <div className="grid grid-cols-3 gap-1.5 bg-[#0C0E10] p-1 rounded-xl border border-[#292D31]">
+                  {/* Tab 1: Tabular */}
+                  <button
+                    onClick={() => { setActiveTab('tabular'); setValidationError(null); }}
+                    className={`py-2 px-1 text-center rounded-lg text-[11px] font-mono font-medium transition cursor-pointer relative ${
+                      activeTab === 'tabular'
+                        ? 'bg-[#171A1D] text-[#F1F2F3] border border-[#D66A32] shadow-sm'
+                        : 'text-[#737A82] hover:text-[#A4A9AF]'
+                    }`}
+                  >
+                    <Sliders className="w-3.5 h-3.5 mx-auto mb-1 text-[#D66A32]" />
+                    <span className="block font-semibold">Tabular</span>
+                    <span className="text-[9px] block mt-0.5">
+                      {isTabActive ? (
+                        <span className="text-emerald-400 font-bold">● Ready</span>
+                      ) : hasTabularData ? (
+                        <span className="text-[#737A82]">○ Off</span>
+                      ) : (
+                        <span className="text-amber-400">△ Empty</span>
+                      )}
+                    </span>
+                  </button>
+
+                  {/* Tab 2: Audio */}
+                  <button
+                    onClick={() => { setActiveTab('audio'); setValidationError(null); }}
+                    className={`py-2 px-1 text-center rounded-lg text-[11px] font-mono font-medium transition cursor-pointer relative ${
+                      activeTab === 'audio'
+                        ? 'bg-[#171A1D] text-[#F1F2F3] border border-[#D66A32] shadow-sm'
+                        : 'text-[#737A82] hover:text-[#A4A9AF]'
+                    }`}
+                  >
+                    <Waves className="w-3.5 h-3.5 mx-auto mb-1 text-[#D66A32]" />
+                    <span className="block font-semibold">Audio</span>
+                    <span className="text-[9px] block mt-0.5">
+                      {isAudActive ? (
+                        <span className="text-emerald-400 font-bold">● Ready</span>
+                      ) : hasAudioData ? (
+                        <span className="text-[#737A82]">○ Off</span>
+                      ) : (
+                        <span className="text-amber-400">△ Empty</span>
+                      )}
+                    </span>
+                  </button>
+
+                  {/* Tab 3: Vibration */}
+                  <button
+                    onClick={() => { setActiveTab('vibration'); setValidationError(null); }}
+                    className={`py-2 px-1 text-center rounded-lg text-[11px] font-mono font-medium transition cursor-pointer relative ${
+                      activeTab === 'vibration'
+                        ? 'bg-[#171A1D] text-[#F1F2F3] border border-[#D66A32] shadow-sm'
+                        : 'text-[#737A82] hover:text-[#A4A9AF]'
+                    }`}
+                  >
+                    <Activity className="w-3.5 h-3.5 mx-auto mb-1 text-[#D66A32]" />
+                    <span className="block font-semibold">Vibration</span>
+                    <span className="text-[9px] block mt-0.5">
+                      {isVibActive ? (
+                        <span className="text-emerald-400 font-bold">● Ready</span>
+                      ) : hasVibrationData ? (
+                        <span className="text-[#737A82]">○ Off</span>
+                      ) : (
+                        <span className="text-amber-400">△ Empty</span>
+                      )}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Active Stream Inclusion Toggle & Title */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#0C0E10] border border-[#292D31]">
                   <div className="flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-[#D66A32]" />
-                    <div>
-                      <span className="text-[10px] text-[#737A82] font-mono block">Affected Component:</span>
-                      <span className="text-xs font-bold text-[#F1F2F3]">
-                        {COMPONENT_METADATA[diagnosticResult.faultyComponentId].name}
+                    <button
+                      onClick={() => {
+                        if (activeTab === 'tabular') setTabularIncluded(!tabularIncluded);
+                        else if (activeTab === 'audio') setAudioIncluded(!audioIncluded);
+                        else setVibrationIncluded(!vibrationIncluded);
+                      }}
+                      className="cursor-pointer text-[#D66A32]"
+                    >
+                      {(activeTab === 'tabular' ? tabularIncluded : activeTab === 'audio' ? audioIncluded : vibrationIncluded) ? (
+                        <CheckSquare className="w-4 h-4 text-emerald-400" />
+                      ) : (
+                        <Square className="w-4 h-4 text-[#737A82]" />
+                      )}
+                    </button>
+                    <span className="text-xs font-mono font-medium text-[#F1F2F3]">
+                      Include {activeTab === 'tabular' ? 'Tabular Sensors' : activeTab === 'audio' ? 'Audio Acoustics' : 'Vibration Dynamics'} in Diagnosis
+                    </span>
+                  </div>
+
+                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                    (activeTab === 'tabular' ? isTabActive : activeTab === 'audio' ? isAudActive : isVibActive)
+                      ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
+                      : 'bg-[#171A1D] border-[#292D31] text-[#737A82]'
+                  }`}>
+                    {(activeTab === 'tabular' ? isTabActive : activeTab === 'audio' ? isAudActive : isVibActive)
+                      ? 'Active'
+                      : 'Excluded'}
+                  </span>
+                </div>
+
+                {/* ------------------------------------------------------------ */}
+                {/* TAB 1 CONTENT: TABULAR SENSORS                               */}
+                {/* ------------------------------------------------------------ */}
+                {activeTab === 'tabular' && (
+                  <div className="space-y-3">
+                    {/* Sub-Mode Toggle: Manual vs CSV */}
+                    <div className="grid grid-cols-2 gap-1 bg-[#0C0E10] p-0.5 rounded-lg border border-[#292D31]">
+                      <button
+                        onClick={() => { setTabularSubMode('manual'); setValidationError(null); }}
+                        className={`py-1.5 px-2 text-center rounded-md text-[10px] font-mono font-medium transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                          tabularSubMode === 'manual'
+                            ? 'bg-[#171A1D] text-[#F1F2F3] border border-[#D66A32]/50 shadow-sm'
+                            : 'text-[#737A82] hover:text-[#A4A9AF]'
+                        }`}
+                      >
+                        <Keyboard className="w-3 h-3" />
+                        Manual 14-Sensor Entry
+                      </button>
+                      <button
+                        onClick={() => { setTabularSubMode('csv'); setValidationError(null); }}
+                        className={`py-1.5 px-2 text-center rounded-md text-[10px] font-mono font-medium transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                          tabularSubMode === 'csv'
+                            ? 'bg-[#171A1D] text-[#F1F2F3] border border-[#D66A32]/50 shadow-sm'
+                            : 'text-[#737A82] hover:text-[#A4A9AF]'
+                        }`}
+                      >
+                        <UploadCloud className="w-3 h-3" />
+                        Upload CSV
+                      </button>
+                    </div>
+
+                    {/* Manual 14-Sensor Input Form */}
+                    {tabularSubMode === 'manual' && (
+                      <TabularInputPanel
+                        hideSubmitButton={true}
+                        initialData={manualTabularData || tabularData}
+                        onChange={(data: TabularEngineData) => {
+                          setTabularData(data);
+                          setManualTabularData(data);
+                          setTabularIncluded(true);
+                        }}
+                      />
+                    )}
+
+                    {/* CSV Upload Mode */}
+                    {tabularSubMode === 'csv' && (
+                      <>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".csv,text/csv"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files.length > 0) {
+                              processUploadedFile(e.target.files[0]);
+                            }
+                          }}
+                        />
+
+                        <div
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={handleDrop}
+                          onClick={() => fileInputRef.current?.click()}
+                          className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition ${
+                            isDragOver
+                              ? 'border-[#D66A32] bg-[#D66A32]/10'
+                              : 'border-[#292D31] hover:border-[#737A82] bg-[#0C0E10]/50'
+                          }`}
+                        >
+                          <UploadCloud className="w-8 h-8 text-[#D66A32] mx-auto mb-2" />
+                          <p className="text-xs font-medium text-[#F1F2F3]">
+                            Drag and drop your telemetry CSV file here
+                          </p>
+                          <p className="text-[10px] text-[#737A82] font-mono mt-1">
+                            or <span className="text-[#D66A32] underline">click to browse</span> (max 50MB)
+                          </p>
+                        </div>
+
+                        {/* File Card */}
+                        {tabularFileName && (
+                          <div className="flex items-center justify-between p-3 rounded-xl bg-[#0C0E10] border border-[#292D31] text-xs">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <FileText className="w-4 h-4 text-[#D66A32] flex-shrink-0" />
+                              <div className="min-w-0">
+                                <p className="font-mono text-[#F1F2F3] truncate text-[11px] font-semibold">
+                                  {tabularFileName}
+                                </p>
+                                <p className="text-[10px] text-[#737A82] font-mono">
+                                  {tabularFileSize} • {isTabularSample ? 'Benchmark Sample' : 'User Upload'}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setTabularFile(null);
+                                setTabularFileName('');
+                                setTabularData(null);
+                              }}
+                              className="p-1 rounded-md text-[#737A82] hover:text-[#F1F2F3] hover:bg-[#171A1D] transition cursor-pointer"
+                              title="Clear tabular file"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Sample Buttons */}
+                        <div className="flex items-center justify-between pt-1 text-[11px] font-mono">
+                          <span className="text-[#737A82]">Tabular Presets:</span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleLoadTabularPreset(1)}
+                              className="text-[#D66A32] hover:text-[#D66A32]/80 underline cursor-pointer font-semibold"
+                            >
+                              Detonation Fault
+                            </button>
+                            <span className="text-[#292D31]">•</span>
+                            <button
+                              onClick={() => handleLoadTabularPreset(0)}
+                              className="text-[#A4A9AF] hover:text-[#F1F2F3] underline cursor-pointer"
+                            >
+                              Nominal Baseline
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* ------------------------------------------------------------ */}
+                {/* TAB 2 CONTENT: AUDIO ACOUSTICS                               */}
+                {/* ------------------------------------------------------------ */}
+                {activeTab === 'audio' && (
+                  <div className="space-y-3">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".wav,.mp3,.ogg,.m4a,.aac,.flac,audio/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          processUploadedFile(e.target.files[0]);
+                        }
+                      }}
+                    />
+
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition ${
+                        isDragOver
+                          ? 'border-[#D66A32] bg-[#D66A32]/10'
+                          : 'border-[#292D31] hover:border-[#737A82] bg-[#0C0E10]/50'
+                      }`}
+                    >
+                      <Waves className="w-8 h-8 text-[#D66A32] mx-auto mb-2" />
+                      <p className="text-xs font-medium text-[#F1F2F3]">
+                        Drag and drop your audio recording (WAV, MP3) here
+                      </p>
+                      <p className="text-[10px] text-[#737A82] font-mono mt-1">
+                        or <span className="text-[#D66A32] underline">click to browse</span> (max 50MB)
+                      </p>
+                    </div>
+
+                    {/* Audio Info Card & Audition Preview */}
+                    {audioData && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-[#0C0E10] border border-[#292D31] text-xs">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <FileText className="w-4 h-4 text-[#D66A32] flex-shrink-0" />
+                            <div className="min-w-0">
+                              <p className="font-mono text-[#F1F2F3] truncate text-[11px] font-semibold">
+                                {audioFileName}
+                              </p>
+                              <p className="text-[10px] text-[#737A82] font-mono">
+                                {audioFileSize} • {isAudioSample ? 'Benchmark Sample' : 'User Upload'}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              stopAudioPreview();
+                              setAudioFile(null);
+                              setAudioFileName('');
+                              setAudioData(null);
+                            }}
+                            className="p-1 rounded-md text-[#737A82] hover:text-[#F1F2F3] hover:bg-[#171A1D] transition cursor-pointer"
+                            title="Clear audio file"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Audition + Quick Metrics */}
+                        <div className="bg-[#0C0E10] p-2.5 rounded-xl border border-[#292D31] flex items-center justify-between">
+                          <div className="min-w-0 text-[10px] font-mono">
+                            <span className="text-[#737A82] block">Acoustic Peak:</span>
+                            <span className="text-[#D66A32] font-bold">{audioData.dominantHarmonicHz.toFixed(1)} Hz</span>
+                            <span className="text-[#737A82]"> • {audioData.peakDb.toFixed(1)} dBFS</span>
+                          </div>
+                          <button
+                            onClick={handleToggleAudioPreview}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 transition cursor-pointer ${
+                              isPlayingAudio
+                                ? 'bg-[#D66A32] text-white shadow-sm'
+                                : 'bg-[#171A1D] hover:bg-[#292D31] text-[#F1F2F3] border border-[#292D31]'
+                            }`}
+                          >
+                            {isPlayingAudio ? (
+                              <>
+                                <span className="w-2 h-2 rounded-sm bg-white" /> Stop
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-3 h-3 fill-current" /> Audition
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Presets */}
+                    <div className="flex items-center justify-between pt-1 text-[11px] font-mono">
+                      <span className="text-[#737A82]">Audio Presets:</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleLoadAudioPreset(1)}
+                          className="text-[#D66A32] hover:text-[#D66A32]/80 underline cursor-pointer font-semibold"
+                        >
+                          Rod Knock
+                        </button>
+                        <span className="text-[#292D31]">•</span>
+                        <button
+                          onClick={() => handleLoadAudioPreset(0)}
+                          className="text-[#A4A9AF] hover:text-[#F1F2F3] underline cursor-pointer"
+                        >
+                          Nominal Idle
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ------------------------------------------------------------ */}
+                {/* TAB 3 CONTENT: VIBRATION ACCELEROMETRY                      */}
+                {/* ------------------------------------------------------------ */}
+                {activeTab === 'vibration' && (
+                  <div className="space-y-3">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".csv,text/csv"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          processUploadedFile(e.target.files[0]);
+                        }
+                      }}
+                    />
+
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition ${
+                        isDragOver
+                          ? 'border-[#D66A32] bg-[#D66A32]/10'
+                          : 'border-[#292D31] hover:border-[#737A82] bg-[#0C0E10]/50'
+                      }`}
+                    >
+                      <Activity className="w-8 h-8 text-[#D66A32] mx-auto mb-2" />
+                      <p className="text-xs font-medium text-[#F1F2F3]">
+                        Drag and drop your vibration CSV file here
+                      </p>
+                      <p className="text-[10px] text-[#737A82] font-mono mt-1">
+                        or <span className="text-[#D66A32] underline">click to browse</span> (max 50MB)
+                      </p>
+                    </div>
+
+                    {/* Vibration File Card & Controls */}
+                    {vibrationData && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-[#0C0E10] border border-[#292D31] text-xs">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <FileText className="w-4 h-4 text-[#D66A32] flex-shrink-0" />
+                            <div className="min-w-0">
+                              <p className="font-mono text-[#F1F2F3] truncate text-[11px] font-semibold">
+                                {vibrationFileName}
+                              </p>
+                              <p className="text-[10px] text-[#737A82] font-mono">
+                                {vibrationFileSize} • {isVibrationSample ? 'Benchmark Sample' : 'User Upload'}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setVibrationFile(null);
+                              setVibrationFileName('');
+                              setVibrationData(null);
+                            }}
+                            className="p-1 rounded-md text-[#737A82] hover:text-[#F1F2F3] hover:bg-[#171A1D] transition cursor-pointer"
+                            title="Clear vibration file"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Jitter Warning if any */}
+                        {vibrationData.qualityWarning && (
+                          <div className="p-2.5 rounded-lg bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs flex items-start gap-2">
+                            <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                            <p className="text-[11px] leading-relaxed font-mono">{vibrationData.qualityWarning}</p>
+                          </div>
+                        )}
+
+                        {/* Channel Selection */}
+                        {vibrationData.availableChannels && vibrationData.availableChannels.length > 1 && (
+                          <div className="bg-[#0C0E10] p-2.5 rounded-xl border border-[#292D31] space-y-1.5">
+                            <div className="flex items-center justify-between text-[10px] font-mono">
+                              <span className="text-[#A4A9AF]">Active Channel:</span>
+                              <span className="text-[#D66A32] font-semibold">{vibrationData.selectedChannel || 'Channel 1'}</span>
+                            </div>
+                            <div className="grid grid-cols-4 gap-1">
+                              {vibrationData.availableChannels.map((ch) => {
+                                const isActive = (vibrationData.selectedChannel || vibrationData.availableChannels![0]) === ch;
+                                return (
+                                  <button
+                                    key={ch}
+                                    onClick={() => handleVibrationChannelChange(ch)}
+                                    className={`py-1 rounded text-center text-[10px] font-mono transition cursor-pointer ${
+                                      isActive
+                                        ? 'bg-[#D66A32] text-white font-bold'
+                                        : 'bg-[#171A1D] border border-[#292D31] text-[#A4A9AF] hover:text-[#F1F2F3]'
+                                    }`}
+                                  >
+                                    {ch}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Metrics */}
+                        <div className="grid grid-cols-2 gap-1.5 text-[10px] font-mono">
+                          <div className="bg-[#0C0E10] p-2 rounded-lg border border-[#292D31]">
+                            <span className="text-[#737A82] block">RMS Amplitude:</span>
+                            <span className="text-[#F1F2F3] font-bold">{vibrationData.rmsAccelerationG.toFixed(4)} units</span>
+                          </div>
+                          <div className="bg-[#0C0E10] p-2 rounded-lg border border-[#292D31]">
+                            <span className="text-[#737A82] block">Dominant Frequency:</span>
+                            <span className="text-[#D66A32] font-bold">{vibrationData.dominantOrderHz.toFixed(1)} Hz</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Presets */}
+                    <div className="flex items-center justify-between pt-1 text-[11px] font-mono">
+                      <span className="text-[#737A82]">Vibration Presets:</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleLoadVibrationPreset(1)}
+                          className="text-[#D66A32] hover:text-[#D66A32]/80 underline cursor-pointer font-semibold"
+                        >
+                          Radial Imbalance
+                        </button>
+                        <span className="text-[#292D31]">•</span>
+                        <button
+                          onClick={() => handleLoadVibrationPreset(0)}
+                          className="text-[#A4A9AF] hover:text-[#F1F2F3] underline cursor-pointer"
+                        >
+                          Triaxial Baseline
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ============================================================ */}
+                {/* UNIFIED EXECUTION BUTTON (Part 1.4)                           */}
+                {/* ============================================================ */}
+                <div className="pt-2 space-y-2 border-t border-[#292D31]">
+                  <div className="flex items-center justify-between text-[11px] font-mono text-[#737A82]">
+                    <span>Analysis Scope:</span>
+                    <span className="text-[#F1F2F3] font-semibold">
+                      {activeStreamsCount > 0 ? `${activeStreamsCount} of 3 Streams (${activeStreamNames.join(' + ')})` : '0 Streams Selected'}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={handleAnalyzeEngine}
+                    disabled={activeStreamsCount === 0}
+                    className={`w-full py-3.5 px-4 rounded-xl font-mono font-bold text-xs tracking-wider uppercase transition flex items-center justify-center gap-2 shadow-lg ${
+                      activeStreamsCount > 0
+                        ? 'bg-[#D66A32] hover:bg-[#D66A32]/90 text-white shadow-[#D66A32]/20 cursor-pointer'
+                        : 'bg-[#171A1D] text-[#737A82] border border-[#292D31] cursor-not-allowed'
+                    }`}
+                  >
+                    <Play className="w-4 h-4 fill-current" />
+                    <span>
+                      {activeStreamsCount > 0
+                        ? `Analyze My Engine (${activeStreamsCount} Stream${activeStreamsCount === 1 ? '' : 's'}) →`
+                        : 'Select At Least 1 Stream'}
+                    </span>
+                  </button>
+                </div>
+
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* STATE 2: ANALYZING STATE                                    */}
+            {/* ============================================================ */}
+            {labState === 'ANALYZING' && (
+              <div className="space-y-4 py-2">
+                <div className="flex items-center gap-3 border-b border-[#292D31] pb-3">
+                  <Cpu className="w-5 h-5 text-[#D66A32] animate-spin" />
+                  <div>
+                    <h4 className="font-bold text-[#F1F2F3] text-sm">Processing Diagnostic Streams</h4>
+                    <p className="text-[10px] text-[#737A82] font-mono">
+                      Evaluating {activeStreamsCount} Stream{activeStreamsCount === 1 ? '' : 's'} ({activeStreamNames.join(', ')})
+                    </p>
+                  </div>
+                </div>
+
+                {/* Progress Checklist */}
+                <div className="space-y-3 font-mono text-xs">
+                  <div className="flex items-center gap-2.5">
+                    {analysisStep >= 1 ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    ) : (
+                      <div className="w-4 h-4 rounded-full border border-[#292D31] flex-shrink-0" />
+                    )}
+                    <span className={analysisStep >= 1 ? 'text-[#F1F2F3]' : 'text-[#737A82]'}>
+                      Validating active input streams
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+                    {analysisStep > 2 ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    ) : analysisStep === 2 ? (
+                      <div className="w-4 h-4 rounded-full border-2 border-[#D66A32] border-t-transparent animate-spin flex-shrink-0" />
+                    ) : (
+                      <div className="w-4 h-4 rounded-full border border-[#292D31] flex-shrink-0" />
+                    )}
+                    <span className={analysisStep >= 2 ? 'text-[#F1F2F3]' : 'text-[#737A82]'}>
+                      Running concurrent model inference
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+                    {analysisStep > 3 ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    ) : analysisStep === 3 ? (
+                      <div className="w-4 h-4 rounded-full border-2 border-[#D66A32] border-t-transparent animate-spin flex-shrink-0" />
+                    ) : (
+                      <div className="w-4 h-4 rounded-full border border-[#292D31] flex-shrink-0" />
+                    )}
+                    <span className={analysisStep >= 3 ? 'text-[#F1F2F3]' : 'text-[#737A82]'}>
+                      Exploding 3D engine & mapping fault attribution
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+                    {analysisStep >= 4 ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    ) : (
+                      <div className="w-4 h-4 rounded-full border border-[#292D31] flex-shrink-0" />
+                    )}
+                    <span className={analysisStep >= 4 ? 'text-[#F1F2F3]' : 'text-[#737A82]'}>
+                      Calculating Engine Health Index & cross-stream consensus
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-2 text-center">
+                  <span className="text-[11px] font-mono text-[#D66A32] animate-pulse">
+                    Synthesizing multi-modal telemetry...
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* STATE 3: 3D CAD INSPECTION VIEW (When in RESULT state)        */}
+            {/* ============================================================ */}
+            {labState === 'RESULT' && resultViewMode === 'cad' && unifiedResultsData && (
+              <div className="space-y-4">
+                {/* Health Index Score Badge */}
+                <div className="p-3.5 rounded-xl bg-[#0C0E10] border border-[#292D31] flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-mono text-[#737A82] block">Engine Health Index:</span>
+                    <span className={`text-xl font-black font-mono ${
+                      unifiedResultsData.healthIndex.score !== null && unifiedResultsData.healthIndex.score >= 80
+                        ? 'text-emerald-400'
+                        : unifiedResultsData.healthIndex.score !== null && unifiedResultsData.healthIndex.score >= 50
+                        ? 'text-amber-400'
+                        : 'text-red-400'
+                    }`}>
+                      {unifiedResultsData.healthIndex.scoreFormatted}
+                      {unifiedResultsData.healthIndex.score !== null && <span className="text-xs text-[#737A82]"> / 100</span>}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setResultViewMode('dashboard')}
+                    className="px-3 py-1.5 rounded-lg bg-[#D66A32] hover:bg-[#D66A32]/90 text-white font-mono text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-md"
+                  >
+                    <BarChart3 className="w-3.5 h-3.5" />
+                    <span>View Report</span>
+                  </button>
+                </div>
+
+                {/* Affected Component Highlight Card */}
+                {highlightedComponentId && COMPONENT_METADATA[highlightedComponentId] ? (
+                  <div className="p-3 rounded-xl bg-[#0C0E10] border border-[#D66A32]/50 space-y-1">
+                    <span className="text-[10px] font-mono text-[#D66A32] uppercase font-bold block">
+                      Attributed Component (Exploded 3D Focus):
+                    </span>
+                    <p className="text-sm font-bold text-[#F1F2F3]">
+                      {COMPONENT_METADATA[highlightedComponentId].name}
+                    </p>
+                    <p className="text-[11px] text-[#A4A9AF]">
+                      {COMPONENT_METADATA[highlightedComponentId].mechanicalFunction}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-xl bg-[#0C0E10] border border-emerald-500/40 text-emerald-200 text-xs flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    <span>Nominal engine operation: No isolated faulty components detected.</span>
+                  </div>
+                )}
+
+                {/* 3 Streams Summary Pills */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-mono text-[#737A82] uppercase tracking-wider block font-semibold">
+                    Stream Diagnoses:
+                  </span>
+                  <div className="space-y-1 font-mono text-[11px]">
+                    <div className="flex justify-between p-2 rounded-lg bg-[#0C0E10] border border-[#292D31]">
+                      <span className="text-[#A4A9AF]">Tabular:</span>
+                      <span className={unifiedResultsData.outputs.tabular.status === 'SUCCESS' ? 'text-[#F1F2F3] font-medium' : 'text-[#737A82]'}>
+                        {unifiedResultsData.outputs.tabular.status === 'SUCCESS' ? (unifiedResultsData.outputs.tabular.metadata?.['Predicted Class'] || 'Evaluated') : 'Excluded'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between p-2 rounded-lg bg-[#0C0E10] border border-[#292D31]">
+                      <span className="text-[#A4A9AF]">Audio:</span>
+                      <span className={unifiedResultsData.outputs.audio.status === 'SUCCESS' ? 'text-[#F1F2F3] font-medium' : 'text-[#737A82]'}>
+                        {unifiedResultsData.outputs.audio.status === 'SUCCESS' ? (unifiedResultsData.outputs.audio.metadata?.['Predicted Class'] || 'Evaluated') : 'Excluded'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between p-2 rounded-lg bg-[#0C0E10] border border-[#292D31]">
+                      <span className="text-[#A4A9AF]">Vibration:</span>
+                      <span className={unifiedResultsData.outputs.vibration.status === 'SUCCESS' ? 'text-[#F1F2F3] font-medium' : 'text-[#737A82]'}>
+                        {unifiedResultsData.outputs.vibration.status === 'SUCCESS' ? (unifiedResultsData.outputs.vibration.metadata?.['Predicted Class'] || 'Evaluated') : 'Excluded'}
                       </span>
                     </div>
                   </div>
-                  <span className="text-[10px] font-mono text-[#D66A32] bg-[#D66A32]/10 px-2 py-0.5 rounded border border-[#D66A32]/30">
-                    Highlighted in 3D
-                  </span>
                 </div>
-              )}
 
-              {/* Key Evidence Bullets */}
-              {diagnosticResult.findings && diagnosticResult.findings.length > 0 && (
-                <div className="space-y-1.5 pt-1">
-                  <span className="text-[10px] font-mono text-[#737A82] uppercase tracking-wider block font-semibold">
-                    Key Sensor Evidence:
-                  </span>
-                  <ul className="space-y-1 text-[11px] text-[#A4A9AF]">
-                    {diagnosticResult.findings.slice(0, 3).map((finding, idx) => (
-                      <li key={idx} className="flex items-start gap-1.5">
-                        <span className="text-[#D66A32] font-mono leading-none mt-1">•</span>
-                        <span className="leading-tight">{finding}</span>
-                      </li>
-                    ))}
-                  </ul>
+                {/* Action Buttons */}
+                <div className="pt-2 space-y-2">
+                  <button
+                    onClick={() => setResultViewMode('dashboard')}
+                    className="w-full py-3 px-4 rounded-xl bg-[#D66A32] hover:bg-[#D66A32]/90 text-white font-mono font-bold text-xs tracking-wider uppercase transition flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#D66A32]/20"
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    <span>Open Comprehensive Dashboard →</span>
+                  </button>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={handleEditInputs}
+                      className="py-2.5 px-3 rounded-xl bg-[#0C0E10] hover:bg-[#171A1D] border border-[#292D31] text-[#A4A9AF] hover:text-[#F1F2F3] text-xs font-mono transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Edit Inputs</span>
+                    </button>
+                    <button
+                      onClick={handleRunAnotherTest}
+                      className="py-2.5 px-3 rounded-xl bg-[#0C0E10] hover:bg-[#171A1D] border border-[#292D31] text-[#A4A9AF] hover:text-[#F1F2F3] text-xs font-mono transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>New Test</span>
+                    </button>
+                  </div>
                 </div>
-              )}
-
-              {/* Recommended Action */}
-              {diagnosticResult.recommendedActions && diagnosticResult.recommendedActions.length > 0 && (
-                <div className="p-3 rounded-xl bg-[#171A1D]/60 border border-[#292D31] text-[11px] space-y-1">
-                  <span className="text-[10px] font-mono text-[#D66A32] uppercase font-bold block">
-                    Recommended Action:
-                  </span>
-                  <p className="text-[#F1F2F3] leading-relaxed">
-                    {diagnosticResult.recommendedActions[0]}
-                  </p>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="pt-2 space-y-2">
-                <button
-                  onClick={handleRunAnotherTest}
-                  className="w-full py-3.5 px-4 rounded-xl bg-[#D66A32] hover:bg-[#D66A32]/90 text-white font-mono font-bold text-xs tracking-wider uppercase transition flex items-center justify-center gap-2 shadow-lg shadow-[#D66A32]/20 cursor-pointer"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  <span>Run Another Test</span>
-                </button>
-
-                <button
-                  onClick={() => setShowChartsDrawer(!showChartsDrawer)}
-                  className="w-full py-2.5 px-3 rounded-xl bg-[#0C0E10] hover:bg-[#171A1D] border border-[#292D31] text-[#A4A9AF] hover:text-[#F1F2F3] text-xs font-mono transition flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <BarChart3 className="w-3.5 h-3.5 text-[#D66A32]" />
-                  <span>{showChartsDrawer ? 'Hide Sensor Telemetry' : 'View Full Sensor Telemetry'}</span>
-                  {showChartsDrawer ? <ChevronUp className="w-3.5 h-3.5 ml-1" /> : <ChevronDown className="w-3.5 h-3.5 ml-1" />}
-                </button>
               </div>
-            </div>
-          )}
-        </div>
-      </div>
+            )}
 
-      {/* 4. Sensor Telemetry Drawer (Optional Detailed Expansion) */}
-      {showChartsDrawer && diagnosticResult && (
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* 5. SENSOR TELEMETRY DRAWER (When in 3D CAD mode)             */}
+      {/* ============================================================ */}
+      {showChartsDrawer && primaryDiagnosticResult && (
         <div className="absolute bottom-6 left-4 sm:left-8 right-4 sm:right-8 z-40 max-h-[45vh] overflow-y-auto bg-[#101214]/95 backdrop-blur-xl border border-[#292D31] rounded-2xl p-5 shadow-2xl space-y-4 custom-scrollbar animate-fadeIn">
           <div className="flex items-center justify-between border-b border-[#292D31] pb-3">
             <div className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-[#D66A32]" />
-              <h3 className="text-sm font-bold text-[#F1F2F3]">Engineering Sensor Telemetry & Spectral Analysis</h3>
+              <h3 className="text-sm font-bold text-[#F1F2F3]">Engineering Telemetry & Spectral Analysis</h3>
             </div>
             <button
               onClick={() => setShowChartsDrawer(false)}
@@ -916,14 +1670,14 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             <div className="lg:col-span-8">
               <DiagnosticCharts
-                modality={modality}
-                tabularData={tabularData}
-                audioData={audioData}
-                vibrationData={vibrationData}
+                modality={activeTab}
+                tabularData={tabularData || TABULAR_PRESETS[0].data}
+                audioData={audioData || AUDIO_PRESETS[0].data}
+                vibrationData={vibrationData || VIBRATION_PRESETS[0].data}
               />
             </div>
             <div className="lg:col-span-4">
-              <ActionableRecommendations result={diagnosticResult} />
+              <ActionableRecommendations result={primaryDiagnosticResult} />
             </div>
           </div>
         </div>

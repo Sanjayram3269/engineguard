@@ -69,7 +69,9 @@ export const DiagnosticResultPanel: React.FC<DiagnosticResultPanelProps> = ({
           </div>
 
           <div className="text-right">
-            <span className="text-[10px] font-mono text-[#737A82] uppercase block">Confidence</span>
+            <span className="text-[10px] font-mono text-[#737A82] uppercase block">
+              {result.confidenceLabel || 'Confidence'}
+            </span>
             <span className="text-xs font-mono font-bold text-[#F1F2F3]">
               {result.confidencePercent.toFixed(1)}%
             </span>

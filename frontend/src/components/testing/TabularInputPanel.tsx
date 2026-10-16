@@ -1,62 +1,185 @@
-import React from 'react';
-import { Sliders, RotateCcw, Activity, Gauge, Flame } from 'lucide-react';
-import { TabularEngineData, PresetScenario } from '../../types/diagnosis';
-import { TABULAR_PRESETS } from '../../lib/diagnosticEngine';
+import React, { useState, useCallback, useEffect } from 'react';
+import { RotateCcw, AlertTriangle, Gauge, Activity, Fuel, Flame, Wind } from 'lucide-react';
+import { TabularEngineData } from '../../types/diagnosis';
+import {
+  TELEMETRY_FEATURE_DEFS,
+  TELEMETRY_CATEGORIES,
+  VERIFIED_DATASET_EXAMPLES,
+  validateTabularInputs,
+  tabularDataToFormStrings,
+  type TelemetryFeatureDef,
+  type ValidationResult
+} from '../../lib/tabularValidation';
 
 interface TabularInputPanelProps {
-  data: TabularEngineData;
-  onChange: (data: TabularEngineData) => void;
-  onSelectPreset: (preset: PresetScenario<TabularEngineData>) => void;
-  activePresetId: string | null;
+  onSubmit?: (data: TabularEngineData) => void;
+  onChange?: (data: TabularEngineData) => void;
+  isAnalyzing?: boolean;
+  initialData?: TabularEngineData | null;
+  hideSubmitButton?: boolean;
+}
+
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  intake: <Gauge className="w-3 h-3 text-[#D66A32]" />,
+  kinematics: <Activity className="w-3 h-3 text-[#D66A32]" />,
+  fuel: <Fuel className="w-3 h-3 text-[#D66A32]" />,
+  combustion: <Flame className="w-3 h-3 text-[#D66A32]" />,
+  emissions: <Wind className="w-3 h-3 text-[#D66A32]" />
+};
+
+function SensorField({
+  def,
+  value,
+  error,
+  warning,
+  onChange
+}: {
+  def: TelemetryFeatureDef;
+  value: string;
+  error?: string;
+  warning?: string;
+  onChange: (key: string, val: string) => void;
+}) {
+  return (
+    <div className="space-y-0.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <label className="text-[11px] text-[#A4A9AF] truncate" title={def.description}>
+          {def.shortName} <span className="text-red-400/70">*</span>
+        </label>
+        <span className="text-[10px] text-[#737A82] font-mono flex-shrink-0">{def.unit}</span>
+      </div>
+      <input
+        type="text"
+        inputMode="decimal"
+        value={value}
+        onChange={(e) => onChange(def.key, e.target.value)}
+        placeholder={`${def.minObserved} – ${def.maxObserved}`}
+        className={`w-full px-2.5 py-1.5 rounded-lg text-[11px] font-mono bg-[#101214] border outline-none transition placeholder:text-[#292D31] text-[#F1F2F3] ${
+          error
+            ? 'border-red-500/60 focus:border-red-400'
+            : warning
+            ? 'border-amber-500/40 focus:border-amber-400'
+            : 'border-[#292D31] focus:border-[#D66A32]'
+        }`}
+      />
+      {error && (
+        <p className="text-[10px] text-red-400 leading-tight pl-0.5">{error}</p>
+      )}
+      {!error && warning && (
+        <p className="text-[10px] text-amber-400 leading-tight pl-0.5">{warning}</p>
+      )}
+    </div>
+  );
 }
 
 export const TabularInputPanel: React.FC<TabularInputPanelProps> = ({
-  data,
+  onSubmit,
   onChange,
-  onSelectPreset,
-  activePresetId
+  isAnalyzing,
+  initialData,
+  hideSubmitButton,
 }) => {
-  const updateField = (field: keyof TabularEngineData, value: number) => {
-    onChange({
-      ...data,
-      [field]: value
+  const [formValues, setFormValues] = useState<Record<string, string>>(() => {
+    if (initialData) return tabularDataToFormStrings(initialData);
+    const empty: Record<string, string> = {};
+    for (const def of TELEMETRY_FEATURE_DEFS) empty[def.key] = '';
+    return empty;
+  });
+
+  const [validation, setValidation] = useState<ValidationResult | null>(null);
+  const [activeExampleId, setActiveExampleId] = useState<string | null>(null);
+
+  // Re-populate if initialData changes externally
+  useEffect(() => {
+    if (initialData) {
+      setFormValues(tabularDataToFormStrings(initialData));
+      setValidation(null);
+    }
+  }, [initialData]);
+
+  const handleFieldChange = useCallback((key: string, val: string) => {
+    setFormValues(prev => {
+      const updated = { ...prev, [key]: val };
+      const parsed = validateTabularInputs(updated);
+      if (parsed.isValid && parsed.data && onChange) {
+        onChange(parsed.data);
+      }
+      return updated;
     });
-  };
+    setActiveExampleId(null);
+    if (validation) {
+      setValidation(prev => {
+        if (!prev) return prev;
+        const newErrors = { ...prev.fieldErrors };
+        delete newErrors[key as keyof TabularEngineData];
+        return { ...prev, fieldErrors: newErrors };
+      });
+    }
+  }, [validation, onChange]);
+
+  const handleLoadExample = useCallback((exampleId: string) => {
+    const example = VERIFIED_DATASET_EXAMPLES.find(e => e.id === exampleId);
+    if (!example) return;
+    setFormValues(tabularDataToFormStrings(example.data));
+    setActiveExampleId(exampleId);
+    setValidation(null);
+    if (onChange) {
+      onChange(example.data);
+    }
+  }, [onChange]);
+
+  const handleReset = useCallback(() => {
+    const empty: Record<string, string> = {};
+    for (const def of TELEMETRY_FEATURE_DEFS) empty[def.key] = '';
+    setFormValues(empty);
+    setActiveExampleId(null);
+    setValidation(null);
+  }, []);
+
+  const handleSubmit = useCallback(() => {
+    const result = validateTabularInputs(formValues);
+    setValidation(result);
+    if (result.isValid && result.data && onSubmit) {
+      onSubmit(result.data);
+    }
+  }, [formValues, onSubmit]);
+
+  // Group features by category
+  const groupedFeatures = TELEMETRY_CATEGORIES.map(cat => ({
+    ...cat,
+    features: TELEMETRY_FEATURE_DEFS.filter(d => d.category === cat.id)
+  }));
 
   return (
-    <div className="space-y-5 font-sans">
-      {/* Preset Scenario Selector */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-[11px] font-mono uppercase tracking-wider text-[#A4A9AF]">
-            Calibrated Dataset Presets (EngineFaultDB)
-          </label>
-          <span className="text-[10px] text-[#737A82] font-mono">4 Real Scenarios</span>
+    <div className="space-y-3">
+      {/* Load Example Pills */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-[#737A82]">
+            Load Verified Dataset Record
+          </span>
+          <button
+            onClick={handleReset}
+            className="text-[10px] font-mono text-[#737A82] hover:text-[#F1F2F3] flex items-center gap-1 transition cursor-pointer"
+          >
+            <RotateCcw className="w-2.5 h-2.5" /> Clear All
+          </button>
         </div>
-        <div className="grid grid-cols-1 gap-1.5">
-          {TABULAR_PRESETS.map((preset) => {
-            const isSelected = activePresetId === preset.id;
+        <div className="grid grid-cols-2 gap-1.5">
+          {VERIFIED_DATASET_EXAMPLES.map(ex => {
+            const isActive = activeExampleId === ex.id;
             return (
               <button
-                key={preset.id}
-                onClick={() => onSelectPreset(preset)}
-                className={`text-left p-2.5 rounded-lg border text-xs transition ${
-                  isSelected
+                key={ex.id}
+                onClick={() => handleLoadExample(ex.id)}
+                className={`text-left px-2.5 py-1.5 rounded-lg border text-[10px] transition cursor-pointer ${
+                  isActive
                     ? 'bg-[#171A1D] border-[#D66A32] text-[#F1F2F3]'
-                    : 'bg-[#101214] border-[#292D31] text-[#A4A9AF] hover:border-[#737A82]/50 hover:text-[#F1F2F3]'
+                    : 'bg-[#0C0E10] border-[#292D31] text-[#A4A9AF] hover:border-[#737A82]/60 hover:text-[#F1F2F3]'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-xs tracking-tight">{preset.title}</span>
-                  {isSelected && (
-                    <span className="text-[10px] font-mono text-[#D66A32] bg-[#D66A32]/10 px-1.5 py-0.5 rounded border border-[#D66A32]/25">
-                      ACTIVE
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-[#737A82] mt-1 line-clamp-1">
-                  {preset.shortDescription}
-                </p>
+                <span className="font-semibold block truncate">{ex.name}</span>
+                <span className="text-[#737A82] font-mono block mt-0.5 truncate">{ex.operatingPoint}</span>
               </button>
             );
           })}
@@ -65,286 +188,68 @@ export const TabularInputPanel: React.FC<TabularInputPanelProps> = ({
 
       <div className="h-[1px] bg-[#292D31]" />
 
-      {/* Manual Sensor Parameter Controls (14 Real Model Channels) */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-mono uppercase tracking-wider text-[#A4A9AF] flex items-center gap-1.5">
-            <Sliders className="w-3.5 h-3.5 text-[#D66A32]" />
-            14 Real Telemetry Channels
-          </span>
-          <button
-            onClick={() => onSelectPreset(TABULAR_PRESETS[0])}
-            className="text-[10px] font-mono text-[#737A82] hover:text-[#F1F2F3] flex items-center gap-1 transition"
-          >
-            <RotateCcw className="w-3 h-3" /> Reset Nominal
-          </button>
+      {/* Validation Summary Error Banner */}
+      {validation && !validation.isValid && validation.summaryError && (
+        <div className="p-2.5 rounded-lg bg-red-950/50 border border-red-500/40 text-red-200 text-[11px] flex items-start gap-2">
+          <AlertTriangle className="w-3.5 h-3.5 text-red-400 flex-shrink-0 mt-0.5" />
+          <span>{validation.summaryError}</span>
         </div>
+      )}
 
-        {/* Section 1: Mechanical & Dynamics */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase text-[#737A82] tracking-wider">
-            <Activity className="w-3 h-3 text-[#D66A32]" /> Dynamics & Speed
-          </div>
-
-          <div className="grid grid-cols-1 gap-2">
-            {/* RPM */}
-            <div className="bg-[#101214] p-2.5 rounded-lg border border-[#292D31]">
-              <div className="flex justify-between items-center mb-1 text-xs">
-                <span className="text-[#A4A9AF]">Engine Speed (RPM)</span>
-                <span className="font-mono text-[#F1F2F3] font-medium">{data.RPM} <span className="text-[#737A82] text-[10px]">RPM</span></span>
-              </div>
-              <input
-                type="range"
-                min={1000}
-                max={5200}
-                step={25}
-                value={data.RPM}
-                onChange={(e) => updateField('RPM', parseFloat(e.target.value))}
-                className="w-full h-1.5 bg-[#171A1D] rounded appearance-none cursor-pointer accent-[#D66A32]"
-              />
+      {/* Sensor Input Groups */}
+      <div className="space-y-3">
+        {groupedFeatures.map(group => (
+          <div key={group.id} className="space-y-1.5">
+            <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase text-[#737A82] tracking-wider">
+              {CATEGORY_ICONS[group.id]} {group.label}
             </div>
-
-            {/* Speed */}
-            <div className="bg-[#101214] p-2.5 rounded-lg border border-[#292D31]">
-              <div className="flex justify-between items-center mb-1 text-xs">
-                <span className="text-[#A4A9AF]">Vehicle Speed</span>
-                <span className="font-mono text-[#F1F2F3] font-medium">{data.Speed.toFixed(1)} <span className="text-[#737A82] text-[10px]">km/h</span></span>
-              </div>
-              <input
-                type="range"
-                min={20}
-                max={110}
-                step={0.5}
-                value={data.Speed}
-                onChange={(e) => updateField('Speed', parseFloat(e.target.value))}
-                className="w-full h-1.5 bg-[#171A1D] rounded appearance-none cursor-pointer accent-[#D66A32]"
-              />
-            </div>
-
-            {/* Force & Power */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="bg-[#101214] p-2.5 rounded-lg border border-[#292D31]">
-                <div className="flex justify-between items-center mb-1 text-xs">
-                  <span className="text-[#A4A9AF]">Force</span>
-                  <span className="font-mono text-[#F1F2F3] font-medium">{data.Force.toFixed(1)} <span className="text-[#737A82] text-[10px]">N</span></span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={1500}
-                  step={10}
-                  value={data.Force}
-                  onChange={(e) => updateField('Force', parseFloat(e.target.value))}
-                  className="w-full h-1.5 bg-[#171A1D] rounded appearance-none cursor-pointer accent-[#D66A32]"
+            <div className={`grid gap-2 ${group.features.length <= 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
+              {group.features.map(def => (
+                <SensorField
+                  key={def.key}
+                  def={def}
+                  value={formValues[def.key] || ''}
+                  error={validation?.fieldErrors[def.key]}
+                  warning={validation?.fieldWarnings[def.key]}
+                  onChange={handleFieldChange}
                 />
-              </div>
-
-              <div className="bg-[#101214] p-2.5 rounded-lg border border-[#292D31]">
-                <div className="flex justify-between items-center mb-1 text-xs">
-                  <span className="text-[#A4A9AF]">Power</span>
-                  <span className="font-mono text-[#F1F2F3] font-medium">{data.Power.toFixed(1)} <span className="text-[#737A82] text-[10px]">kW</span></span>
-                </div>
-                <input
-                  type="range"
-                  min={0.5}
-                  max={35}
-                  step={0.5}
-                  value={data.Power}
-                  onChange={(e) => updateField('Power', parseFloat(e.target.value))}
-                  className="w-full h-1.5 bg-[#171A1D] rounded appearance-none cursor-pointer accent-[#D66A32]"
-                />
-              </div>
-            </div>
-
-            {/* TPS */}
-            <div className="bg-[#101214] p-2.5 rounded-lg border border-[#292D31]">
-              <div className="flex justify-between items-center mb-1 text-xs">
-                <span className="text-[#A4A9AF]">Throttle Position (TPS)</span>
-                <span className="font-mono text-[#F1F2F3] font-medium">{data.TPS.toFixed(2)} <span className="text-[#737A82] text-[10px]">V</span></span>
-              </div>
-              <input
-                type="range"
-                min={0.3}
-                max={4.2}
-                step={0.05}
-                value={data.TPS}
-                onChange={(e) => updateField('TPS', parseFloat(e.target.value))}
-                className="w-full h-1.5 bg-[#171A1D] rounded appearance-none cursor-pointer accent-[#D66A32]"
-              />
+              ))}
             </div>
           </div>
-        </div>
-
-        {/* Section 2: Manifold & Fuel Flow */}
-        <div className="space-y-2 pt-1">
-          <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase text-[#737A82] tracking-wider">
-            <Gauge className="w-3 h-3 text-[#D66A32]" /> Manifold & Fuel Flow
-          </div>
-
-          <div className="grid grid-cols-1 gap-2">
-            {/* MAP */}
-            <div className="bg-[#101214] p-2.5 rounded-lg border border-[#292D31]">
-              <div className="flex justify-between items-center mb-1 text-xs">
-                <span className="text-[#A4A9AF]">Manifold Pressure (MAP)</span>
-                <span className="font-mono text-[#F1F2F3] font-medium">{data.MAP.toFixed(2)} <span className="text-[#737A82] text-[10px]">bar/V</span></span>
-              </div>
-              <input
-                type="range"
-                min={0.4}
-                max={4.6}
-                step={0.05}
-                value={data.MAP}
-                onChange={(e) => updateField('MAP', parseFloat(e.target.value))}
-                className="w-full h-1.5 bg-[#171A1D] rounded appearance-none cursor-pointer accent-[#D66A32]"
-              />
-            </div>
-
-            {/* Consumption */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="bg-[#101214] p-2.5 rounded-lg border border-[#292D31]">
-                <div className="flex justify-between items-center mb-1 text-xs">
-                  <span className="text-[#A4A9AF]">Consumption</span>
-                  <span className="font-mono text-[#F1F2F3] font-medium">{data['Consumption L/H'].toFixed(2)} <span className="text-[#737A82] text-[10px]">L/h</span></span>
-                </div>
-                <input
-                  type="range"
-                  min={1.5}
-                  max={15.0}
-                  step={0.1}
-                  value={data['Consumption L/H']}
-                  onChange={(e) => updateField('Consumption L/H', parseFloat(e.target.value))}
-                  className="w-full h-1.5 bg-[#171A1D] rounded appearance-none cursor-pointer accent-[#D66A32]"
-                />
-              </div>
-
-              <div className="bg-[#101214] p-2.5 rounded-lg border border-[#292D31]">
-                <div className="flex justify-between items-center mb-1 text-xs">
-                  <span className="text-[#A4A9AF]">Per 100km</span>
-                  <span className="font-mono text-[#F1F2F3] font-medium">{data['Consumption L/100KM'].toFixed(1)} <span className="text-[#737A82] text-[10px]">L</span></span>
-                </div>
-                <input
-                  type="range"
-                  min={4.0}
-                  max={20.0}
-                  step={0.1}
-                  value={data['Consumption L/100KM']}
-                  onChange={(e) => updateField('Consumption L/100KM', parseFloat(e.target.value))}
-                  className="w-full h-1.5 bg-[#171A1D] rounded appearance-none cursor-pointer accent-[#D66A32]"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Section 3: Combustion & Emissions */}
-        <div className="space-y-2 pt-1">
-          <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase text-[#737A82] tracking-wider">
-            <Flame className="w-3 h-3 text-[#D66A32]" /> Combustion & Emissions
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-[#101214] p-2.5 rounded-lg border border-[#292D31]">
-              <div className="flex justify-between items-center mb-1 text-xs">
-                <span className="text-[#A4A9AF]">Lambda (λ)</span>
-                <span className="font-mono text-[#F1F2F3] font-medium">{data.Lambda.toFixed(3)}</span>
-              </div>
-              <input
-                type="range"
-                min={0.7}
-                max={1.15}
-                step={0.005}
-                value={data.Lambda}
-                onChange={(e) => updateField('Lambda', parseFloat(e.target.value))}
-                className="w-full h-1.5 bg-[#171A1D] rounded appearance-none cursor-pointer accent-[#D66A32]"
-              />
-            </div>
-
-            <div className="bg-[#101214] p-2.5 rounded-lg border border-[#292D31]">
-              <div className="flex justify-between items-center mb-1 text-xs">
-                <span className="text-[#A4A9AF]">AFR</span>
-                <span className="font-mono text-[#F1F2F3] font-medium">{data.AFR.toFixed(2)}</span>
-              </div>
-              <input
-                type="range"
-                min={10.2}
-                max={16.9}
-                step={0.05}
-                value={data.AFR}
-                onChange={(e) => updateField('AFR', parseFloat(e.target.value))}
-                className="w-full h-1.5 bg-[#171A1D] rounded appearance-none cursor-pointer accent-[#D66A32]"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-[#101214] p-2.5 rounded-lg border border-[#292D31]">
-              <div className="flex justify-between items-center mb-1 text-xs">
-                <span className="text-[#A4A9AF]">CO Emission</span>
-                <span className="font-mono text-[#F1F2F3] font-medium">{data.CO.toFixed(2)} <span className="text-[#737A82] text-[10px]">%</span></span>
-              </div>
-              <input
-                type="range"
-                min={0.4}
-                max={10.0}
-                step={0.1}
-                value={data.CO}
-                onChange={(e) => updateField('CO', parseFloat(e.target.value))}
-                className="w-full h-1.5 bg-[#171A1D] rounded appearance-none cursor-pointer accent-[#D66A32]"
-              />
-            </div>
-
-            <div className="bg-[#101214] p-2.5 rounded-lg border border-[#292D31]">
-              <div className="flex justify-between items-center mb-1 text-xs">
-                <span className="text-[#A4A9AF]">HC Emission</span>
-                <span className="font-mono text-[#F1F2F3] font-medium">{Math.round(data.HC)} <span className="text-[#737A82] text-[10px]">ppm</span></span>
-              </div>
-              <input
-                type="range"
-                min={5}
-                max={950}
-                step={5}
-                value={data.HC}
-                onChange={(e) => updateField('HC', parseFloat(e.target.value))}
-                className="w-full h-1.5 bg-[#171A1D] rounded appearance-none cursor-pointer accent-[#D66A32]"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-[#101214] p-2.5 rounded-lg border border-[#292D31]">
-              <div className="flex justify-between items-center mb-1 text-xs">
-                <span className="text-[#A4A9AF]">CO2</span>
-                <span className="font-mono text-[#F1F2F3] font-medium">{data.CO2.toFixed(2)} <span className="text-[#737A82] text-[10px]">%</span></span>
-              </div>
-              <input
-                type="range"
-                min={8.5}
-                max={15.2}
-                step={0.1}
-                value={data.CO2}
-                onChange={(e) => updateField('CO2', parseFloat(e.target.value))}
-                className="w-full h-1.5 bg-[#171A1D] rounded appearance-none cursor-pointer accent-[#D66A32]"
-              />
-            </div>
-
-            <div className="bg-[#101214] p-2.5 rounded-lg border border-[#292D31]">
-              <div className="flex justify-between items-center mb-1 text-xs">
-                <span className="text-[#A4A9AF]">O2</span>
-                <span className="font-mono text-[#F1F2F3] font-medium">{data.O2.toFixed(2)} <span className="text-[#737A82] text-[10px]">%</span></span>
-              </div>
-              <input
-                type="range"
-                min={0.2}
-                max={1.2}
-                step={0.02}
-                value={data.O2}
-                onChange={(e) => updateField('O2', parseFloat(e.target.value))}
-                className="w-full h-1.5 bg-[#171A1D] rounded appearance-none cursor-pointer accent-[#D66A32]"
-              />
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
+
+      {/* Advisory Warning Banner (when valid but out-of-range warnings exist) */}
+      {validation && validation.isValid && validation.warningCount > 0 && (
+        <div className="p-2.5 rounded-lg bg-amber-950/40 border border-amber-500/30 text-amber-200 text-[11px] flex items-start gap-2">
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
+          <span>
+            {validation.warningCount} value{validation.warningCount > 1 ? 's' : ''} outside observed training range — model predictions may be less reliable.
+          </span>
+        </div>
+      )}
+
+      {/* Submit Button */}
+      {!hideSubmitButton && (
+        <button
+          onClick={handleSubmit}
+          disabled={isAnalyzing}
+          className={`w-full py-3 px-4 rounded-xl font-mono font-bold text-xs tracking-wider uppercase transition flex items-center justify-center gap-2 cursor-pointer ${
+            isAnalyzing
+              ? 'bg-[#D66A32]/50 text-white/60 cursor-not-allowed'
+              : 'bg-[#D66A32] hover:bg-[#D66A32]/90 text-white shadow-lg shadow-[#D66A32]/20'
+          }`}
+        >
+          {isAnalyzing ? (
+            <>
+              <div className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+              <span>Processing…</span>
+            </>
+          ) : (
+            <span>Run Diagnostic Inference →</span>
+          )}
+        </button>
+      )}
     </div>
   );
 };

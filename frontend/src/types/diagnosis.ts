@@ -39,6 +39,13 @@ export interface AudioEngineData {
   };
 }
 
+export interface VibrationChannelMetric {
+  name: string;
+  rms: number;
+  peakToPeak: number;
+  timeSeries?: { t: number; a: number }[];
+}
+
 export interface VibrationEngineData {
   sampleName: string;
   samplingRateHz: number;
@@ -51,6 +58,7 @@ export interface VibrationEngineData {
   selectedChannel?: string;
   availableChannels?: string[];
   qualityWarning?: string | null;
+  channelMetrics?: VibrationChannelMetric[];
   spectrogram?: {
     times: number[];
     frequencies: number[];
@@ -88,6 +96,9 @@ export interface DiagnosticResult {
     top_factors?: string[];
     fault_probability_classified?: string;
   };
+  confidenceLabel?: string;
+  rawPredictedClass?: string;
+  confidenceFraction?: number;
   isSimulated?: boolean;
 }
 

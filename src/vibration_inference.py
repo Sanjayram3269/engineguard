@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 import sys
 import json
 import joblib
@@ -70,6 +70,7 @@ def predict_recording(csv_path):
         "confidence_type": "random_forest_vote_fraction",
         "confidence": confidence,
         "class_probabilities": class_probabilities,
+        "computed_features": X.iloc[0].to_dict(),
         "review_required": confidence < 0.60,
         "status": "experimental_decision_support",
     }

@@ -337,8 +337,10 @@ export const DiagnosticCharts: React.FC<DiagnosticChartsProps> = ({
                     >
                       {audioSpectrogram.matrix.map((frame, frameIdx) =>
                         frame.map((mag, binIdx) => {
-                          const normalized = audioMaxMag > 0 ? mag / audioMaxMag : 0;
-                          const opacity = Math.max(0.05, Math.min(1, normalized));
+                          const normalized = audioMaxMag > 0 ? Math.min(1, Math.max(0, mag / audioMaxMag)) : 0;
+                          // Gamma compression renders lower-energy harmonics visible
+                          const scaled = Math.pow(normalized, 0.45);
+                          const opacity = Math.max(0.04, Math.min(1, scaled));
                           const cellHeight = 100 / Math.max(1, frame.length);
 
                           return (
@@ -352,7 +354,7 @@ export const DiagnosticCharts: React.FC<DiagnosticChartsProps> = ({
                               opacity={opacity}
                             >
                               <title>
-                                {`Time: ${audioSpectrogram.times[frameIdx]}s; Freq: ${audioSpectrogram.frequencies[binIdx]} Hz`}
+                                {`Time: ${audioSpectrogram.times[frameIdx]}s; Freq: ${audioSpectrogram.frequencies[binIdx]} Hz; Mag: ${mag.toFixed(5)}`}
                               </title>
                             </rect>
                           );
@@ -577,8 +579,10 @@ export const DiagnosticCharts: React.FC<DiagnosticChartsProps> = ({
                     >
                       {vibSpectrogram.matrix.map((frame, frameIndex) =>
                         frame.map((magnitude, binIndex) => {
-                          const normalized = vibMaxMag > 0 ? magnitude / vibMaxMag : 0;
-                          const opacity = Math.max(0.06, Math.min(1, normalized));
+                          const normalized = vibMaxMag > 0 ? Math.min(1, Math.max(0, magnitude / vibMaxMag)) : 0;
+                          // Gamma compression renders time-frequency harmonic energy visible
+                          const scaled = Math.pow(normalized, 0.4);
+                          const opacity = Math.max(0.04, Math.min(1, scaled));
                           const cellHeight = 100 / Math.max(1, frame.length);
 
                           return (
@@ -592,7 +596,7 @@ export const DiagnosticCharts: React.FC<DiagnosticChartsProps> = ({
                               opacity={opacity}
                             >
                               <title>
-                                {`Time: ${vibSpectrogram.times[frameIndex]}s; Freq: ${vibSpectrogram.frequencies[binIndex]} Hz`}
+                                {`Time: ${vibSpectrogram.times[frameIndex]}s; Freq: ${vibSpectrogram.frequencies[binIndex]} Hz; Mag: ${magnitude.toFixed(5)} units`}
                               </title>
                             </rect>
                           );

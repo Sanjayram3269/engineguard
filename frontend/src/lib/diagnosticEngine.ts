@@ -174,6 +174,12 @@ export const VIBRATION_PRESETS: PresetScenario<VibrationEngineData>[] = [
       ],
       selectedChannel: 'Channel 1',
       availableChannels: ['Channel 1', 'Channel 2', 'Channel 3', 'Channel 4'],
+      channelMetrics: [
+        { name: 'Channel 1', rms: 0.68, peakToPeak: 2.1, timeSeries: Array.from({ length: 60 }, (_, i) => ({ t: i * 0.002, a: Math.sin(i * 0.4) * 0.6 })) },
+        { name: 'Channel 2', rms: 0.54, peakToPeak: 1.7, timeSeries: Array.from({ length: 60 }, (_, i) => ({ t: i * 0.002, a: Math.cos(i * 0.4) * 0.5 })) },
+        { name: 'Channel 3', rms: 0.49, peakToPeak: 1.5, timeSeries: Array.from({ length: 60 }, (_, i) => ({ t: i * 0.002, a: Math.sin(i * 0.8) * 0.4 })) },
+        { name: 'Channel 4', rms: 0.61, peakToPeak: 1.9, timeSeries: Array.from({ length: 60 }, (_, i) => ({ t: i * 0.002, a: Math.cos(i * 0.3) * 0.55 })) }
+      ],
       qualityWarning: null
     }
   },
@@ -200,6 +206,12 @@ export const VIBRATION_PRESETS: PresetScenario<VibrationEngineData>[] = [
       ],
       selectedChannel: 'Channel 1',
       availableChannels: ['Channel 1', 'Channel 2', 'Channel 3', 'Channel 4'],
+      channelMetrics: [
+        { name: 'Channel 1', rms: 2.45, peakToPeak: 9.8, timeSeries: Array.from({ length: 60 }, (_, i) => ({ t: i * 0.002, a: Math.sin(i * 0.25) * 2.2 })) },
+        { name: 'Channel 2', rms: 1.89, peakToPeak: 7.2, timeSeries: Array.from({ length: 60 }, (_, i) => ({ t: i * 0.002, a: Math.cos(i * 0.25) * 1.7 })) },
+        { name: 'Channel 3', rms: 2.15, peakToPeak: 8.4, timeSeries: Array.from({ length: 60 }, (_, i) => ({ t: i * 0.002, a: Math.sin(i * 0.5) * 1.9 })) },
+        { name: 'Channel 4', rms: 1.42, peakToPeak: 5.6, timeSeries: Array.from({ length: 60 }, (_, i) => ({ t: i * 0.002, a: Math.cos(i * 0.4) * 1.3 })) }
+      ],
       qualityWarning: null
     }
   }
@@ -316,6 +328,8 @@ function mapTabularApiResult(body: ApiDiagnosticResult): DiagnosticResult {
   return {
     id: `live-tabular-${Date.now()}`,
     modality: 'tabular',
+    rawPredictedClass: predClass,
+    confidenceFraction: confidence,
     timestamp: new Date().toISOString(),
     status: isNominal ? 'NOMINAL' : 'FAULT',
     faultTitle: predClass,
@@ -369,6 +383,8 @@ function mapAudioApiResult(body: ApiDiagnosticResult): DiagnosticResult {
   return {
     id: `live-audio-${Date.now()}`,
     modality: 'audio',
+    rawPredictedClass: pred,
+    confidenceFraction: confidence,
     timestamp: new Date().toISOString(),
     status: isNominal ? 'NOMINAL' : pred === 'Engine Issue' ? 'FAULT' : 'WARNING',
     faultTitle: pred,
@@ -403,37 +419,56 @@ function mapVibrationApiResult(body: ApiDiagnosticResult): DiagnosticResult {
   const isNominal = pred === 'Healthy';
   const confPct = Math.round(confidence * 10000) / 100;
 
+  // The model classifies binary bearing condition ('Faulty' vs 'Healthy')
+  // We map the 3D visual target to crankshaft / main journals for inspection, but clearly label it as a recommended inspection hypothesis
   const faultyComponentId = isNominal ? null : 'crankshaft';
   const severity: DiagnosticResult['severity'] = isNominal ? 'nominal' : 'critical';
 
   const probEntries = Object.entries(body.class_probabilities || {});
   const metrics: DiagnosticResult['metrics'] = probEntries.length > 0
     ? probEntries.map(([cls, prob]) => ({
-        label: cls,
+        label: `${cls} Vote Fraction`,
         value: `${(prob * 100).toFixed(1)}%`,
         status: cls === 'Healthy' ? 'normal' : 'critical'
       }))
     : [{ label: 'Vibration Status', value: pred, status: isNominal ? 'normal' : 'critical' }];
 
+  const findings = [
+    `Binary Classification: ${pred} (Bearing condition model)`,
+    `Model Vote Fraction: ${confPct.toFixed(1)}% (${body.confidence_type || 'Random Forest vote fraction'})`,
+    isNominal
+      ? 'Ensemble consensus indicates normal vibration envelope.'
+      : 'Specific mechanical subtype: Not predicted by binary model (physical teardown/inspection required to identify root cause).'
+  ];
+
+  if (body.review_required) {
+    findings.push('Review required: Model confidence is near the decision threshold.');
+  }
+
   return {
     id: `live-vibration-${Date.now()}`,
     modality: 'vibration',
+    rawPredictedClass: pred,
+    confidenceFraction: confidence,
     timestamp: new Date().toISOString(),
     status: isNominal ? 'NOMINAL' : 'FAULT',
-    faultTitle: pred === 'Faulty' ? 'JOURNAL BEARING RADIAL IMBALANCE' : 'HEALTHY VIBRATION SPECTRUM',
-    faultSummary: `Live accelerometer model identified tri-axial vibration recording as: ${pred}.`,
+    faultTitle: isNominal
+      ? 'NOMINAL BEARING VIBRATION (HEALTHY)'
+      : 'BEARING CONDITION ANOMALY DETECTED (FAULTY)',
+    faultSummary: `Live Random Forest vibration model classified recording as: ${pred} (binary bearing condition classifier).`,
     severity,
     confidencePercent: confPct,
+    confidenceLabel: 'MODEL VOTE FRACTION',
     faultyComponentId,
-    subsystem: isNominal ? 'Balanced Rotational System' : 'Crankshaft Main Journals',
-    mechanicalRationale: `Time-series statistical features extracted from CSV recording and evaluated by trained vibration classifier. Vote fraction: ${(confidence * 100).toFixed(1)}%.`,
-    findings: [
-      `Vibration Classification: ${pred}`,
-      `Model Confidence: ${confPct.toFixed(1)}%`
-    ],
+    subsystem: isNominal ? 'Balanced Rotational Assembly' : 'Journal Bearings / Crankshaft Assembly',
+    mechanicalRationale: `Statistical and spectral features across accelerometer channels evaluated by trained binary Random Forest classifier. Class vote fraction: ${(confidence * 100).toFixed(1)}%. Note: scores reflect ensemble tree vote agreement, not calibrated fault probabilities.`,
+    findings,
     recommendedActions: isNominal
-      ? ['Hydrodynamic bearing clearance is within nominal assembly tolerances.']
-      : ['Inspect journal bearing shells for babbitt layer degradation, scoring, or excessive radial play.'],
+      ? ['Hydrodynamic bearing vibration within nominal envelope. Continue standard preventative maintenance.']
+      : [
+          'Inspect journal bearing shells for babbitt layer wear, scoring, or excessive clearance (recommended inspection hypothesis; specific fault mechanism is not directly identified by the binary model).',
+          'Verify lubricant supply pressure, operating temperature, and oil cleanliness.'
+        ],
     metrics,
     details: {
       summary: `Vibration inference completed: ${pred}`,
@@ -459,6 +494,7 @@ export function evaluateTabularData(data: TabularEngineData): DiagnosticResult {
     return {
       id: `sim-tab-${Date.now()}`,
       modality: 'tabular',
+      rawPredictedClass: 'Fault type 1',
       timestamp,
       status: 'FAULT',
       faultTitle: 'FAULT SCENARIO 1 (SIMULATED DEMO)',
@@ -488,6 +524,7 @@ export function evaluateTabularData(data: TabularEngineData): DiagnosticResult {
   return {
     id: `sim-tab-nom-${Date.now()}`,
     modality: 'tabular',
+    rawPredictedClass: 'Normal (no fault)',
     timestamp,
     status: 'NOMINAL',
     faultTitle: 'NOMINAL BASELINE (SIMULATED DEMO)',
@@ -521,6 +558,7 @@ export function evaluateAudioData(data: AudioEngineData): DiagnosticResult {
   return {
     id: `sim-aud-${Date.now()}`,
     modality: 'audio',
+    rawPredictedClass: isKnock ? 'Engine issue' : 'Normal engine',
     timestamp,
     status: isKnock ? 'FAULT' : 'NOMINAL',
     faultTitle: isKnock ? 'CONNECTING ROD KNOCK (SIMULATED DEMO)' : 'NOMINAL ACOUSTIC PROFILE (SIMULATED DEMO)',
@@ -556,11 +594,12 @@ export function evaluateVibrationData(data: VibrationEngineData): DiagnosticResu
   return {
     id: `sim-vib-${Date.now()}`,
     modality: 'vibration',
+    rawPredictedClass: isFault ? 'Faulty bearing' : 'Healthy bearing',
     timestamp,
     status: isFault ? 'FAULT' : 'NOMINAL',
     faultTitle: isFault ? 'JOURNAL BEARING WEAR (SIMULATED DEMO)' : 'NOMINAL VIBRATION SPECTRUM (SIMULATED DEMO)',
     faultSummary: isFault
-      ? `Elevated RMS acceleration (${data.rmsAccelerationG.toFixed(2)} G) with high crest factor (Simulated fallback result).`
+      ? `Elevated RMS acceleration (${data.rmsAccelerationG.toFixed(2)} units) with high crest factor (Simulated fallback result).`
       : 'Vibration acceleration within nominal limits (Simulated fallback result).',
     severity: isFault ? 'critical' : 'nominal',
     confidencePercent: isFault ? 89.0 : 96.0,
