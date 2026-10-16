@@ -26,6 +26,17 @@ export interface AudioEngineData {
   dominantHarmonicHz: number;
   spectralPoints: { freq: number; magnitude: number }[];
   audioBuffer?: AudioBuffer | null;
+  rmsLevel?: number;
+  peakAmplitude?: number;
+  channelCount?: number;
+  channelMode?: string;
+  timeSeries?: { t: number; a: number }[];
+  spectrogram?: {
+    times: number[];
+    frequencies: number[];
+    matrix: number[][];
+    maxMagnitude?: number;
+  };
 }
 
 export interface VibrationEngineData {
@@ -37,6 +48,16 @@ export interface VibrationEngineData {
   dominantOrderHz: number;
   timeSeries: { t: number; a: number }[];
   fftSpectrum: { freq: number; amp: number }[];
+  selectedChannel?: string;
+  availableChannels?: string[];
+  qualityWarning?: string | null;
+  spectrogram?: {
+    times: number[];
+    frequencies: number[];
+    matrix: number[][];
+    maxMagnitude?: number;
+  };
+  rawCsvText?: string;
 }
 
 export type FaultSeverity = 'nominal' | 'low' | 'moderate' | 'critical';

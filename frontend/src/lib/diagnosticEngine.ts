@@ -171,7 +171,10 @@ export const VIBRATION_PRESETS: PresetScenario<VibrationEngineData>[] = [
         { freq: 25, amp: 0.15 },
         { freq: 50, amp: 0.55 },
         { freq: 100, amp: 0.20 }
-      ]
+      ],
+      selectedChannel: 'Channel 1',
+      availableChannels: ['Channel 1', 'Channel 2', 'Channel 3', 'Channel 4'],
+      qualityWarning: null
     }
   },
   {
@@ -194,7 +197,10 @@ export const VIBRATION_PRESETS: PresetScenario<VibrationEngineData>[] = [
         { freq: 41.6, amp: 2.4 },
         { freq: 83.2, amp: 1.2 },
         { freq: 166.4, amp: 0.8 }
-      ]
+      ],
+      selectedChannel: 'Channel 1',
+      availableChannels: ['Channel 1', 'Channel 2', 'Channel 3', 'Channel 4'],
+      qualityWarning: null
     }
   }
 ];
@@ -667,51 +673,25 @@ export function parseTabularCsv(content: string): { rowCount: number; data: Tabu
   };
 }
 
-export function parseVibrationCsv(content: string): {
-  samplingRateHz: number;
-  rmsAccelerationG: number;
-  peakToPeakG: number;
-  crestFactor: number;
-  dominantOrderHz: number;
-  timeSeries: { t: number; a: number }[];
-  fftSpectrum: { freq: number; amp: number }[];
-} | null {
-  const lines = content.trim().split(/\r?\n/).filter(Boolean);
-  if (lines.length < 5) return null;
 
-  // Extract acceleration values from CSV
-  const values: number[] = [];
-  for (let i = 1; i < Math.min(lines.length, 500); i++) {
-    const parts = lines[i].split(',');
-    const v = parseFloat(parts[parts.length - 1]);
-    if (!isNaN(v)) values.push(v);
-  }
 
-  if (values.length < 5) return null;
+export {
+  computeSingleSidedSpectrum,
+  computeSTFT,
+  analyzeDecodedAudio,
+  analyzeAudioFile,
+} from './signalProcessing';
 
-  let sumSq = 0;
-  let min = values[0];
-  let max = values[0];
-  for (const v of values) {
-    sumSq += v * v;
-    if (v < min) min = v;
-    if (v > max) max = v;
-  }
-  const rms = Math.sqrt(sumSq / values.length);
-  const peakToPeak = max - min;
-  const crest = rms > 0 ? max / rms : 3.0;
+import { parseVibrationCsv as parseVibrationCsvFull } from './signalProcessing';
 
-  return {
-    samplingRateHz: 5000,
-    rmsAccelerationG: parseFloat(rms.toFixed(3)),
-    peakToPeakG: parseFloat(peakToPeak.toFixed(2)),
-    crestFactor: parseFloat(crest.toFixed(2)),
-    dominantOrderHz: 50.0,
-    timeSeries: values.slice(0, 80).map((a, i) => ({ t: i * 0.001, a })),
-    fftSpectrum: [
-      { freq: 25, amp: parseFloat((rms * 0.3).toFixed(2)) },
-      { freq: 50, amp: parseFloat((rms * 0.8).toFixed(2)) },
-      { freq: 100, amp: parseFloat((rms * 0.4).toFixed(2)) }
-    ]
-  };
+export function parseVibrationCsv(
+  content: string,
+  fileName = 'vibration_data.csv',
+  selectedChannel?: string
+): VibrationEngineData | null {
+  const result = parseVibrationCsvFull(content, fileName, selectedChannel);
+  if (!result.success || !result.data) return null;
+  return result.data;
 }
+
+export { parseVibrationCsvFull };

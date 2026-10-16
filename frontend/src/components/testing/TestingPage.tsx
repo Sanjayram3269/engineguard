@@ -39,9 +39,9 @@ import {
   validateAudioData,
   validateVibrationData,
   parseTabularCsv,
-  parseVibrationCsv,
   ValidationResult
 } from '../../lib/diagnosticEngine';
+import { analyzeAudioFile, parseVibrationCsv as parseVibrationCsvFull } from '../../lib/signalProcessing';
 import { COMPONENT_METADATA } from '../../types/engine';
 import { TestingEngineCanvas } from './TestingEngineCanvas';
 import { DiagnosticCharts } from './DiagnosticCharts';
@@ -91,14 +91,91 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
   const [diagnosticResult, setDiagnosticResult] = useState<DiagnosticResult | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
 
+  // Audio preview playback state
+  const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const activeSourceRef = useRef<AudioBufferSourceNode | OscillatorNode | null>(null);
+
+  const stopAudioPreview = () => {
+    if (activeSourceRef.current) {
+      try {
+        activeSourceRef.current.stop();
+      } catch {}
+      activeSourceRef.current = null;
+    }
+    setIsPlayingAudio(false);
+  };
+
+  const handleToggleAudioPreview = () => {
+    if (isPlayingAudio) {
+      stopAudioPreview();
+      return;
+    }
+
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const ctx = audioContextRef.current || new AudioCtx();
+      audioContextRef.current = ctx;
+
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      if (audioData.audioBuffer) {
+        const source = ctx.createBufferSource();
+        source.buffer = audioData.audioBuffer;
+        source.connect(ctx.destination);
+        source.onended = () => setIsPlayingAudio(false);
+        source.start(0);
+        activeSourceRef.current = source;
+        setIsPlayingAudio(true);
+      } else {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const freq = audioData.dominantHarmonicHz > 0 ? Math.min(2000, Math.max(50, audioData.dominantHarmonicHz)) : 125;
+        osc.type = freq > 1500 ? 'sawtooth' : 'triangle';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        activeSourceRef.current = osc;
+        setIsPlayingAudio(true);
+
+        setTimeout(() => {
+          if (activeSourceRef.current === osc) {
+            try { osc.stop(); } catch {}
+            setIsPlayingAudio(false);
+          }
+        }, Math.min(4000, (audioData.durationSeconds || 3.5) * 1000));
+      }
+    } catch {
+      setIsPlayingAudio(false);
+    }
+  };
+
+  const handleVibrationChannelChange = (ch: string) => {
+    if (vibrationData.rawCsvText) {
+      const parsed = parseVibrationCsvFull(vibrationData.rawCsvText, vibrationData.sampleName, ch);
+      if (parsed.success && parsed.data) {
+        setVibrationData(parsed.data);
+        return;
+      }
+    }
+    setVibrationData({ ...vibrationData, selectedChannel: ch });
+  };
+
   // Keep explosion progress synced with GSAP
   const explosionProgressRef = useRef<number>(0.0);
   explosionProgressRef.current = explosionProgress;
 
   // Handle Modality Switch
   const handleModalityChange = (newModality: InputModality) => {
+    stopAudioPreview();
     setModality(newModality);
     setValidationError(null);
+    setDiagnosticResult(null);
+    setShowChartsDrawer(false);
     if (newModality === 'tabular') {
       setUploadedFile({
         name: 'c14ne_cylinder_detonation_run.csv',
@@ -125,7 +202,10 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
 
   // Quick Load Sample Dataset
   const handleLoadSample = (sampleType: 'fault' | 'nominal' = 'fault') => {
+    stopAudioPreview();
     setValidationError(null);
+    setDiagnosticResult(null);
+    setShowChartsDrawer(false);
     if (modality === 'tabular') {
       const preset = sampleType === 'fault' ? TABULAR_PRESETS[1] : TABULAR_PRESETS[0];
       setTabularData(preset.data);
@@ -154,8 +234,12 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
   };
 
   // Handle Real File Upload
-  const processUploadedFile = (file: File) => {
+  const processUploadedFile = async (file: File) => {
+    stopAudioPreview();
     setValidationError(null);
+    setDiagnosticResult(null);
+    setShowChartsDrawer(false);
+
     const sizeKB = Math.round(file.size / 1024);
     const sizeFormatted = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB} KB`;
 
@@ -164,92 +248,50 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
         setValidationError('Please upload a valid CSV telemetry dataset file.');
         return;
       }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
+      try {
+        const text = await file.text();
         const parsed = parseTabularCsv(text);
         if (parsed) {
           setTabularData(parsed.data);
           setUploadedFile({ name: file.name, sizeFormatted, isSample: false, file });
         } else {
-          // If CSV has custom headers, use fallback while preserving file info
-          setTabularData(TABULAR_PRESETS[1].data);
-          setUploadedFile({ name: file.name, sizeFormatted, isSample: false, file });
+          setValidationError('Could not parse required telemetry columns. Ensure format matches the 14-parameter telemetry schema.');
         }
-      };
-      reader.readAsText(file);
+      } catch (err: any) {
+        setValidationError(`Failed to read CSV: ${err?.message || 'Unknown error'}`);
+      }
     } else if (modality === 'audio') {
       if (!file.name.toLowerCase().match(/\.(wav|mp3|ogg|m4a|aac|flac)$/)) {
-        setValidationError('Please upload a valid WAV, MP3, or OGG engine audio recording.');
+        setValidationError('Please upload a valid audio recording (WAV, MP3, OGG, M4A, FLAC).');
         return;
       }
-      // Process audio file
-      setUploadedFile({ name: file.name, sizeFormatted, isSample: false, file });
-      // Create audio context to decode real duration and peak
       try {
-        const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          try {
-            const buffer = await audioCtx.decodeAudioData(e.target?.result as ArrayBuffer);
-            const channelData = buffer.getChannelData(0);
-            let peak = 0;
-            for (let i = 0; i < channelData.length; i += 20) {
-              const abs = Math.abs(channelData[i]);
-              if (abs > peak) peak = abs;
-            }
-            const peakDb = peak > 0 ? 20 * Math.log10(peak) : -60;
-            setAudioData({
-              fileName: file.name,
-              durationSeconds: buffer.duration,
-              sampleRate: buffer.sampleRate,
-              peakDb: Math.round(peakDb * 10) / 10,
-              dominantHarmonicHz: 2380,
-              spectralPoints: AUDIO_PRESETS[1].data.spectralPoints
-            });
-          } catch {
-            // Audio decoding fallback
-            setAudioData({
-              ...AUDIO_PRESETS[1].data,
-              fileName: file.name
-            });
-          }
-        };
-        reader.readAsArrayBuffer(file);
-      } catch {
-        setAudioData({
-          ...AUDIO_PRESETS[1].data,
-          fileName: file.name
-        });
+        const analyzed = await analyzeAudioFile(file);
+        setAudioData(analyzed);
+        setUploadedFile({ name: file.name, sizeFormatted, isSample: false, file });
+      } catch (err: any) {
+        console.error('Audio decoding error', err);
+        setValidationError(`Unable to decode audio recording: ${err?.message || 'Unsupported format'}. Please ensure file is a valid audio file.`);
       }
     } else {
-      // Vibration accelerometry CSV
+      // Vibration CSV
       if (!file.name.toLowerCase().endsWith('.csv') && !file.type.includes('csv') && !file.type.includes('text')) {
         setValidationError('Please upload a valid accelerometry timeseries CSV file.');
         return;
       }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        const parsed = parseVibrationCsv(text);
-        if (parsed && parsed.timeSeries.length > 5) {
-          setVibrationData({
-            sampleName: file.name,
-            samplingRateHz: 5000,
-            rmsAccelerationG: parsed.rmsAccelerationG,
-            peakToPeakG: parsed.peakToPeakG,
-            crestFactor: parsed.crestFactor,
-            dominantOrderHz: parsed.dominantOrderHz,
-            timeSeries: parsed.timeSeries.slice(0, 80),
-            fftSpectrum: VIBRATION_PRESETS[1].data.fftSpectrum
-          });
+      try {
+        const text = await file.text();
+        const parsed = parseVibrationCsvFull(text, file.name);
+        if (parsed.success && parsed.data) {
+          setVibrationData(parsed.data);
           setUploadedFile({ name: file.name, sizeFormatted, isSample: false, file });
         } else {
-          setVibrationData(VIBRATION_PRESETS[1].data);
-          setUploadedFile({ name: file.name, sizeFormatted, isSample: false, file });
+          setValidationError(parsed.error || 'Failed to parse vibration CSV file. Missing valid Time or Channel columns.');
         }
-      };
-      reader.readAsText(file);
+      } catch (err: any) {
+        console.error('Vibration parsing error', err);
+        setValidationError(`Failed to parse vibration CSV: ${err?.message || 'Unknown error'}`);
+      }
     }
   };
 
@@ -547,12 +589,103 @@ export const TestingPage: React.FC<TestingPageProps> = ({ onBackToLanding }) => 
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      stopAudioPreview();
+                      setDiagnosticResult(null);
+                      setShowChartsDrawer(false);
                       setUploadedFile(null);
+                      if (modality === 'tabular') {
+                        setTabularData(TABULAR_PRESETS[1].data);
+                      } else if (modality === 'audio') {
+                        setAudioData(AUDIO_PRESETS[1].data);
+                      } else {
+                        setVibrationData(VIBRATION_PRESETS[1].data);
+                      }
                     }}
                     className="p-1 rounded-md text-[#737A82] hover:text-[#F1F2F3] hover:bg-[#171A1D] transition cursor-pointer"
                     title="Remove file"
                   >
                     <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Modality Specific Upload Previews & Controls */}
+              {modality === 'vibration' && (
+                <div className="space-y-2 pt-1">
+                  {/* Quality / Jitter Warning Banner */}
+                  {vibrationData.qualityWarning && (
+                    <div className="p-2.5 rounded-lg bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-[11px] leading-relaxed font-mono">{vibrationData.qualityWarning}</p>
+                    </div>
+                  )}
+
+                  {/* Channel Selection */}
+                  {vibrationData.availableChannels && vibrationData.availableChannels.length > 1 && (
+                    <div className="bg-[#0C0E10] p-2.5 rounded-xl border border-[#292D31] space-y-1.5">
+                      <div className="flex items-center justify-between text-[10px] font-mono">
+                        <span className="text-[#A4A9AF]">Measured Channel:</span>
+                        <span className="text-[#D66A32] font-semibold">{vibrationData.selectedChannel || 'Channel 1'}</span>
+                      </div>
+                      <div className="grid grid-cols-4 gap-1">
+                        {vibrationData.availableChannels.map((ch) => {
+                          const isActive = (vibrationData.selectedChannel || vibrationData.availableChannels![0]) === ch;
+                          return (
+                            <button
+                              key={ch}
+                              onClick={() => handleVibrationChannelChange(ch)}
+                              className={`py-1 rounded text-center text-[10px] font-mono transition cursor-pointer ${
+                                isActive
+                                  ? 'bg-[#D66A32] text-white font-bold'
+                                  : 'bg-[#171A1D] border border-[#292D31] text-[#A4A9AF] hover:text-[#F1F2F3]'
+                              }`}
+                            >
+                              {ch}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Quick Metric Pills */}
+                  <div className="grid grid-cols-2 gap-1.5 text-[10px] font-mono">
+                    <div className="bg-[#0C0E10] p-2 rounded-lg border border-[#292D31]">
+                      <span className="text-[#737A82] block">RMS Amplitude:</span>
+                      <span className="text-[#F1F2F3] font-bold">{vibrationData.rmsAccelerationG.toFixed(4)} units</span>
+                    </div>
+                    <div className="bg-[#0C0E10] p-2 rounded-lg border border-[#292D31]">
+                      <span className="text-[#737A82] block">Dominant Frequency:</span>
+                      <span className="text-[#D66A32] font-bold">{vibrationData.dominantOrderHz.toFixed(1)} Hz</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {modality === 'audio' && (
+                <div className="bg-[#0C0E10] p-2.5 rounded-xl border border-[#292D31] flex items-center justify-between">
+                  <div className="min-w-0 text-[10px] font-mono">
+                    <span className="text-[#737A82] block">Dominant / Peak:</span>
+                    <span className="text-[#D66A32] font-bold">{audioData.dominantHarmonicHz.toFixed(1)} Hz</span>
+                    <span className="text-[#737A82]"> • {audioData.peakDb.toFixed(1)} dBFS</span>
+                  </div>
+                  <button
+                    onClick={handleToggleAudioPreview}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 transition cursor-pointer ${
+                      isPlayingAudio
+                        ? 'bg-[#D66A32] text-white shadow-sm'
+                        : 'bg-[#171A1D] hover:bg-[#292D31] text-[#F1F2F3] border border-[#292D31]'
+                    }`}
+                  >
+                    {isPlayingAudio ? (
+                      <>
+                        <span className="w-2 h-2 rounded-sm bg-white" /> Stop
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3 h-3 fill-current" /> Audition
+                      </>
+                    )}
                   </button>
                 </div>
               )}

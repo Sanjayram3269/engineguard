@@ -9,7 +9,8 @@
     "preview": "vite preview --host",
     "backend": "python -m uvicorn backend.app:app --host 127.0.0.1 --port 8000",
     "ui": "vite --host --port 3000",
-    "ui:build": "tsc -b && vite build"
+    "ui:build": "tsc -b && vite build",
+    "test": "node --experimental-strip-types tests/signalProcessing.test.ts"
   },
   "dependencies": {
     "@react-three/drei": "^9.120.4",

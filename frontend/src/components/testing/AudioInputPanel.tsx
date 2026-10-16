@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { UploadCloud, Play, Square, Music } from 'lucide-react';
+import { UploadCloud, Square, Music, Volume2 } from 'lucide-react';
 import { AudioEngineData, PresetScenario } from '../../types/diagnosis';
 import { AUDIO_PRESETS } from '../../lib/diagnosticEngine';
+import { analyzeAudioFile } from '../../lib/signalProcessing';
 
 interface AudioInputPanelProps {
   data: AudioEngineData;
@@ -21,20 +22,26 @@ export const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
   const audioContextRef = useRef<AudioContext | null>(null);
   const activeSourceRef = useRef<AudioBufferSourceNode | OscillatorNode | null>(null);
 
-  // Play synthetic tone or real decoded audio buffer
+  // Stop currently active playback
+  const stopPlayback = () => {
+    if (activeSourceRef.current) {
+      try {
+        activeSourceRef.current.stop();
+      } catch {}
+      activeSourceRef.current = null;
+    }
+    setIsPlaying(false);
+  };
+
+  // Play real decoded audio buffer or synthetic representative profile
   const handleToggleAudio = () => {
     if (isPlaying) {
-      if (activeSourceRef.current) {
-        try {
-          activeSourceRef.current.stop();
-        } catch {}
-      }
-      setIsPlaying(false);
+      stopPlayback();
       return;
     }
 
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       const ctx = audioContextRef.current || new AudioCtx();
       audioContextRef.current = ctx;
 
@@ -51,15 +58,14 @@ export const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
         activeSourceRef.current = source;
         setIsPlaying(true);
       } else {
-        // Play synthetic acoustic profile representative of the frequency
+        // Preset audition tone matching calculated dominant harmonic
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
 
-        const baseFreq = data.dominantHarmonicHz > 1500 ? 120 : data.dominantHarmonicHz > 400 ? 25 : 80;
+        const baseFreq = data.dominantHarmonicHz > 0 ? Math.min(2000, Math.max(50, data.dominantHarmonicHz)) : 125;
         osc.type = data.dominantHarmonicHz > 1500 ? 'sawtooth' : 'triangle';
         osc.frequency.setValueAtTime(baseFreq, ctx.currentTime);
 
-        // Modulate with rhythmic mechanical pulses
         gain.gain.setValueAtTime(0.12, ctx.currentTime);
         osc.connect(gain);
         gain.connect(ctx.destination);
@@ -75,7 +81,7 @@ export const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
             } catch {}
             setIsPlaying(false);
           }
-        }, 3500);
+        }, Math.min(4000, (data.durationSeconds || 3.5) * 1000));
       }
     } catch (e) {
       console.warn('Audio playback error', e);
@@ -83,62 +89,19 @@ export const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
     }
   };
 
-  // Handle local audio file upload
+  // Handle local audio file upload using shared truthful DSP analyzer
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    stopPlayback();
+
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      const ctx = audioContextRef.current || new AudioCtx();
-      audioContextRef.current = ctx;
-
-      const decodedBuffer = await ctx.decodeAudioData(arrayBuffer);
-      const rawData = decodedBuffer.getChannelData(0);
-
-      // Compute peak dB and simple FFT spectral sample
-      let peak = 0;
-      for (let i = 0; i < rawData.length; i++) {
-        const abs = Math.abs(rawData[i]);
-        if (abs > peak) peak = abs;
-      }
-      const peakDb = peak > 0 ? 20 * Math.log10(peak) : -60;
-
-      // Extract spectral frequency bins
-      const spectralPoints: { freq: number; magnitude: number }[] = [];
-      const bins = 60;
-      const step = Math.floor(rawData.length / bins);
-      let dominantHarmonicHz = 240;
-      let maxLocalAmp = 0;
-
-      for (let i = 0; i < bins; i++) {
-        const freq = Math.round(50 + (i / bins) * 4000);
-        let sum = 0;
-        for (let j = 0; j < Math.min(100, step); j++) {
-          sum += Math.abs(rawData[i * step + j] || 0);
-        }
-        const amp = sum / 100;
-        const mag = Math.max(-60, 20 * Math.log10(amp + 0.0001));
-        if (amp > maxLocalAmp) {
-          maxLocalAmp = amp;
-          dominantHarmonicHz = freq;
-        }
-        spectralPoints.push({ freq, magnitude: Math.min(-2, mag) });
-      }
-
-      onChange({
-        fileName: file.name,
-        durationSeconds: Number(decodedBuffer.duration.toFixed(2)),
-        sampleRate: decodedBuffer.sampleRate,
-        peakDb: Number(peakDb.toFixed(1)),
-        dominantHarmonicHz,
-        spectralPoints,
-        audioBuffer: decodedBuffer
-      });
+      const analyzed = await analyzeAudioFile(file);
+      onChange(analyzed);
     } catch (err) {
       console.error('Failed to parse audio file', err);
-      alert('Unable to decode audio file. Please ensure it is a valid WAV or MP3 audio recording.');
+      alert('Unable to decode audio recording. Please ensure it is a valid audio file (WAV, MP3, OGG, M4A, FLAC).');
     }
   };
 
@@ -150,7 +113,7 @@ export const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
           <label className="text-[11px] font-mono uppercase tracking-wider text-[#A4A9AF]">
             Acoustic Test Recordings
           </label>
-          <span className="text-[10px] text-[#737A82] font-mono">Calibrated WAV Samples</span>
+          <span className="text-[10px] text-[#737A82] font-mono">Calibrated Audio Profiles</span>
         </div>
         <div className="grid grid-cols-1 gap-1.5">
           {AUDIO_PRESETS.map((preset) => {
@@ -159,10 +122,7 @@ export const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
               <button
                 key={preset.id}
                 onClick={() => {
-                  if (isPlaying && activeSourceRef.current) {
-                    try { activeSourceRef.current.stop(); } catch {}
-                    setIsPlaying(false);
-                  }
+                  stopPlayback();
                   onSelectPreset(preset);
                 }}
                 className={`text-left p-2.5 rounded-lg border text-xs transition ${
@@ -193,26 +153,26 @@ export const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
       {/* Audio File Upload Box */}
       <div>
         <label className="text-[11px] font-mono uppercase tracking-wider text-[#A4A9AF] block mb-2">
-          Custom Audio Ingestion (.wav, .mp3)
+          Audio Ingestion (.wav, .mp3, .ogg, .m4a, .flac)
         </label>
         <input
           ref={fileInputRef}
           type="file"
-          accept="audio/wav,audio/mp3,audio/mpeg,audio/x-wav"
+          accept=".wav,.mp3,.ogg,.m4a,.aac,.flac,audio/*"
           className="hidden"
           onChange={handleFileUpload}
         />
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="w-full p-4 rounded-lg bg-[#101214] border border-dashed border-[#292D31] hover:border-[#D66A32]/60 hover:bg-[#171A1D] transition flex flex-col items-center justify-center gap-2 group"
+          className="w-full p-4 rounded-lg bg-[#101214] border border-dashed border-[#292D31] hover:border-[#D66A32]/60 hover:bg-[#171A1D] transition flex flex-col items-center justify-center gap-2 group cursor-pointer"
         >
           <UploadCloud className="w-5 h-5 text-[#737A82] group-hover:text-[#D66A32] transition" />
           <div className="text-center">
             <span className="text-xs text-[#F1F2F3] font-medium block">
-              Upload Engine Bay Recording
+              Upload Engine Acoustic Recording
             </span>
             <span className="text-[10px] text-[#737A82] font-mono mt-0.5 block">
-              Auto-computes FFT harmonic spectrum & peak pressure
+              Web Audio API decoded FFT spectrum, STFT & dynamic range
             </span>
           </div>
         </button>
@@ -228,13 +188,13 @@ export const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
                 {data.fileName}
               </span>
               <span className="text-[10px] font-mono text-[#737A82]">
-                {data.sampleRate} Hz • {data.durationSeconds}s
+                {data.sampleRate} Hz • {data.durationSeconds.toFixed(2)}s • {data.channelMode || (data.channelCount && data.channelCount > 1 ? `${data.channelCount} ch` : 'Mono')}
               </span>
             </div>
           </div>
           <button
             onClick={handleToggleAudio}
-            className={`px-3 py-1.5 rounded text-xs font-mono flex items-center gap-1.5 transition ${
+            className={`px-3 py-1.5 rounded text-xs font-mono flex items-center gap-1.5 transition cursor-pointer ${
               isPlaying
                 ? 'bg-[#D66A32] text-white shadow-sm'
                 : 'bg-[#171A1D] hover:bg-[#292D31] text-[#F1F2F3] border border-[#292D31]'
@@ -246,7 +206,7 @@ export const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
               </>
             ) : (
               <>
-                <Play className="w-3 h-3 fill-current" /> Audition
+                <Volume2 className="w-3 h-3" /> Audition
               </>
             )}
           </button>
@@ -257,15 +217,31 @@ export const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
           <div className="bg-[#171A1D] p-2 rounded border border-[#292D31]">
             <span className="text-[10px] font-mono text-[#737A82] uppercase block">Dominant Harmonic</span>
             <span className="text-xs font-mono font-bold text-[#D66A32] mt-0.5 block">
-              {data.dominantHarmonicHz} Hz
+              {data.dominantHarmonicHz.toFixed(1)} Hz
             </span>
           </div>
           <div className="bg-[#171A1D] p-2 rounded border border-[#292D31]">
             <span className="text-[10px] font-mono text-[#737A82] uppercase block">Peak Level</span>
             <span className="text-xs font-mono font-medium text-[#F1F2F3] mt-0.5 block">
-              {data.peakDb} dBFS
+              {data.peakDb.toFixed(1)} dBFS
             </span>
           </div>
+          {data.rmsLevel !== undefined && (
+            <div className="bg-[#171A1D] p-2 rounded border border-[#292D31]">
+              <span className="text-[10px] font-mono text-[#737A82] uppercase block">RMS Level</span>
+              <span className="text-xs font-mono font-medium text-[#F1F2F3] mt-0.5 block">
+                {data.rmsLevel.toFixed(4)}
+              </span>
+            </div>
+          )}
+          {data.channelMode && (
+            <div className="bg-[#171A1D] p-2 rounded border border-[#292D31]">
+              <span className="text-[10px] font-mono text-[#737A82] uppercase block">Channel Mode</span>
+              <span className="text-xs font-mono font-medium text-[#A4A9AF] mt-0.5 block truncate">
+                {data.channelMode}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>
