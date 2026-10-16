@@ -53,8 +53,8 @@ def _y(df: pd.DataFrame) -> np.ndarray:
 # fit using `train` only.
 # ---------------------------------------------------------------------------
 
-def exp_ehi_deviation(train, ev):
-    """Baseline: current Engine Health Index deviation (unsupervised, normal-only reference)."""
+def exp_normal_reference_comparison(train, ev):
+    """Baseline: normal-reference comparison score (unsupervised, normal-only reference)."""
     ref = fit_reference(train)
     res = score_readings(ev, ref)
     return np.array([np.nan if r["score"] is None else -r["score"] for r in res], dtype=float)
@@ -145,14 +145,14 @@ def exp_gbm_ratios(train, ev):
 
 
 CANDIDATES: Dict[str, Callable] = {
-    "EHI deviation (current baseline)": exp_ehi_deviation,
+    "Normal-reference comparison (baseline)": exp_normal_reference_comparison,
     "Engine rpm only (baseline)": exp_rpm_only,
     "Logistic, raw sensors": exp_logistic_raw,
     "RPM-adjusted deviation": exp_rpm_adjusted_deviation,
     "RPM-adjusted logistic": exp_rpm_adjusted_logistic,
     "Gradient boosting + ratios": exp_gbm_ratios,
 }
-BASELINES = {"EHI deviation (current baseline)", "Engine rpm only (baseline)"}
+BASELINES = {"Normal-reference comparison (baseline)", "Engine rpm only (baseline)"}
 
 
 def _auc(y: np.ndarray, s: np.ndarray) -> float:

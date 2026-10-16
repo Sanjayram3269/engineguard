@@ -1,4 +1,4 @@
-"""Command-line interface for the prototype Engine Health Index.
+"""Command-line interface for the normal-reference comparison score.
 
 Examples (run from the repo root):
 
@@ -85,14 +85,13 @@ def cmd_evaluate(args: argparse.Namespace) -> None:
     for name in ("normal_label_0", "faulty_label_1"):
         d = s[name]
         print(f"  {name:16s} n={d['count']}  median={d['median']}  p05={d['p05']}  p95={d['p95']}")
-    print(f"  ROC AUC (faulty vs normal, lower score = more deviation): {sep['roc_auc_faulty_vs_normal']}")
     print(f"  Faulty rows inside normal p05-p95 band: {sep['faulty_within_normal_band_pct']}%")
     print(f"  Normal rows outside normal p05-p95 band: {sep['normal_outside_normal_band_pct']}%")
     print(f"Saved full report to {args.out}")
 
 
 def _print_single(result: Dict[str, Any]) -> None:
-    print("Engine Health Index (prototype)")
+    print("Normal-reference comparison score (prototype)")
     print(f"  Score: {result['score'] if result['score'] is not None else 'NOT SCORED'}  (0-100, higher = closer to normal reference)")
     print(f"  Interpretation: {result['interpretation']}")
     cov = result["coverage"]
@@ -191,7 +190,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--coolant-temp", dest="coolant_temp", type=float)
     s.set_defaults(func=cmd_score)
 
-    r = sub.add_parser("report", help="Judge-facing report: score, status, reasons, confidence")
+    r = sub.add_parser("report", help="Report: score, status, reasons, confidence, and separate fault-risk AUC")
     r.add_argument("--reference", default=DEFAULT_REFERENCE)
     r.add_argument("--json-out", dest="json_out", default=None)
     r.add_argument("--engine-rpm", dest="engine_rpm", type=float)
