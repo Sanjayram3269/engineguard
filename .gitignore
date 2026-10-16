@@ -218,3 +218,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ML asset protection (preserve tracked READMEs only)
+data/*
+!data/README.md
+models/*
+!models/README.md
