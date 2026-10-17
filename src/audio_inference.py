@@ -49,7 +49,11 @@ def predict_audio(audio_path):
     features = extract_features(audio_path)
 
     prediction = model.predict(features)[0]
-    result = {"audio_file": str(audio_path), "prediction": str(prediction)}
+    result = {
+        "audio_file": str(audio_path),
+        "prediction": str(prediction),
+        "feature_names": list(features.columns),
+    }
 
     if hasattr(model, "predict_proba"):
         probabilities = model.predict_proba(features)[0]

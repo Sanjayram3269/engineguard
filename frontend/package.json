@@ -10,20 +10,23 @@
     "backend": "python -m uvicorn backend.app:app --host 127.0.0.1 --port 8000",
     "ui": "vite --host --port 3000",
     "ui:build": "tsc -b && vite build",
-    "test": "node --experimental-strip-types tests/signalProcessing.test.ts && node --experimental-strip-types tests/tabularValidation.test.ts && node --experimental-strip-types tests/engineHealthIndex.test.ts"
+    "generate:rul-demo-data": "node --experimental-strip-types scripts/generateSyntheticRulCsv.ts",
+    "test": "node --experimental-strip-types tests/signalProcessing.test.ts && node --experimental-strip-types tests/tabularValidation.test.ts && node --experimental-strip-types tests/engineHealthIndex.test.ts && node --experimental-strip-types tests/rulSimulation.test.ts && node --experimental-strip-types tests/diagnosticPdf.test.ts"
   },
   "dependencies": {
     "@react-three/drei": "^9.120.4",
     "@react-three/fiber": "^8.17.10",
+    "@types/node": "^20.0.0",
     "firebase": "^13.0.0",
     "gsap": "^3.12.5",
+    "jspdf": "^4.2.1",
     "lucide-react": "^0.460.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "three": "^0.170.0",
-    "@types/node": "^20.0.0"
+    "three": "^0.170.0"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@types/three": "^0.170.0",
@@ -32,7 +35,6 @@
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.16",
     "typescript": "^5.6.3",
-    "vite": "^6.0.1",
-    "@types/node": "^20.0.0"
+    "vite": "^6.0.1"
   }
 }

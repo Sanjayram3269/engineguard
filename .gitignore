@@ -258,3 +258,4 @@ dataset_audit_output.txt
 audit_bearing_reports.py
 audit_datasets.py
 preview_bearing_docs.py
+!data/synthetic_bearing_rul_demo.*

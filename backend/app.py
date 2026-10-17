@@ -39,7 +39,7 @@ _AUD_RAW = (APP_ROOT / "models" / "audio_metadata.json").read_text(encoding="utf
 
 TELEMETRY_EXPECTED_FEATURES = sorted(json.loads(_TELE_RAW)["feature_names"])
 VIBRATION_EXPECTED_FEATURES = sorted(json.loads(_VIB_RAW)["feature_columns"])
-AUDIO_EXPECTED_FEATURES = sorted(json.loads(_AUD_RAW)["feature_schema"]["feature_names"])
+AUDIO_EXPECTED_FEATURES = json.loads(_AUD_RAW)["feature_schema"]["feature_names"]
 
 _TELE_RAW = _VIB_RAW = _AUD_RAW = None
 
@@ -283,8 +283,7 @@ async def predict_audio(file: UploadFile = File(
         except OSError:
             pass
 
-    computed_features = result.get("computed_features") or {}
-    actual_features = sorted(computed_features.keys())
+    actual_features = result.get("feature_names") or []
     expected_features = AUDIO_EXPECTED_FEATURES
     feature_order_ok = expected_features == actual_features
 

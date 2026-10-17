@@ -6,9 +6,9 @@
 [![React 18](https://img.shields.io/badge/frontend-React%2018%20%2B%20TypeScript-61DAFB.svg)](https://react.dev/)
 [![Three.js](https://img.shields.io/badge/3D-Three.js%20%2B%20GSAP-black.svg)](https://threejs.org/)
 [![Vite](https://img.shields.io/badge/build-Vite%206-646CFF.svg)](https://vitejs.dev/)
-[![Tests Passing](https://img.shields.io/badge/tests-41%2F41%20passing-brightgreen.svg)]()
+[![Tests Passing](https://img.shields.io/badge/tests-60%2B%20passing-brightgreen.svg)]()
 
-EngineGuard (branded as **EnginePulse Diagnostic Lab**) is an advanced automotive condition-monitoring platform. It unites three independent machine-learning diagnostic streams—**engine thermodynamic telemetry**, **acoustic audio frequency analysis**, and **accelerometry vibration dynamics**—into a unified, real-time diagnostic workspace.
+EngineGuard (branded as **EnginePulse Diagnostic Lab**) is an advanced automotive condition-monitoring platform. It unites three independent machine-learning diagnostic streams—**engine thermodynamic telemetry**, **acoustic audio frequency analysis**, and **accelerometry vibration dynamics**—into a unified, real-time diagnostic workspace with an experimental **Bearing RUL Simulation Sandbox** and client-side **Diagnostic PDF Report Export**.
 
 The application allows automotive technicians and test engineers to supply **1, 2, or all 3 data streams** in any combination, execute concurrent neural/kinematic inference via a single **`ANALYZE MY ENGINE →`** action, compute a mathematically rigorous **Engine Health Index (EHI)**, and inspect the engine in an interactive **exploded 3D CAD canvas**.
 
@@ -89,6 +89,8 @@ flowchart TD
 - **14-Sensor Manual Input Form**: High-precision automotive telemetry input interface with strict numeric validation, unit badges, and out-of-range training warnings across 5 mechanical categories (Intake, Kinematics, Fuel, Combustion, Emissions).
 - **In-Browser High-Performance DSP**: Real-time Radix-2 Cooley-Tukey FFT, Hann windowing, coherent gain normalization, and STFT spectrogram heatmaps computed entirely on the client thread.
 - **Engine Health Index (EHI)**: Transparent formula computation with live mathematical substitution, normalized weights, dynamic applicability denominators, and zero-risk imputation safeguards.
+- **Bearing RUL Simulation Sandbox**: Experimental heuristic sandbox modeling run-to-threshold bearing degradation against 600 synthetic Weibull/lognormal trajectories with 10th–90th percentile bounds and synthetic dataset export.
+- **Client-Side Diagnostic PDF Export**: Clean, high-resolution vector PDF reports generated entirely in-browser with jsPDF, embedding sensor readings, classification provenance, and waveform/spectrum plots.
 - **Fault Attribution in 3D**: Direct mapping of detected faults to interactive 3D engine components (pistons, connecting rods, crankshaft, valves, cylinder head) using GSAP smooth camera dollying and mesh explosion animations.
 
 ---
@@ -294,7 +296,7 @@ cd frontend
 npm test
 ```
 
-### Test Suite Summary (41/41 Passing):
+### Test Suite Summary (60+ Assertions & Tests Passing):
 - **DSP Test Suite (`tests/signalProcessing.test.ts`) — 15 Tests**:
   - `Cooley-Tukey FFT & nextPowerOfTwo correctness`
   - `Pure Sine Wave (fs=4000 Hz, f0=250 Hz, A=1.0) peak detection`
@@ -339,12 +341,30 @@ npm test
   - `Mixed Combination 1: Tabular (0) + Audio (1) + Vibration (0) -> EHI = 91.6`
   - `Mixed Combination 2: Tabular (1) + Audio (0) + Vibration (0) -> EHI = 30.3`
   - `Exact verbatim interpretation warning verification`
+- **Bearing RUL Simulation Suite (`tests/rulSimulation.test.ts`) — 17 Assertions**:
+  - `Input validation (odometer bounds, threshold checks, non-negative RMS)`
+  - `Weibull/Lognormal cohort generation (600 virtual bearings, fixed seed)`
+  - `Conditioned nearest-neighbor matching and 10th-90th percentile bounds`
+  - `Reproducible synthetic training dataset generation and CSV serialization`
+- **Diagnostic PDF Report Suite (`tests/diagnosticPdf.test.ts`)**:
+  - `Section structure validation (Telemetry, Audio, Vibration, EHI)`
+  - `Exclusion of synthetic RUL from official PDF report`
+  - `Valid %PDF- vector output generation with embedded time/frequency plots`
+
+### Backend Automated Verification:
+```powershell
+# Audio endpoint test (exercises trained MFCC / Random Forest model with bundled MP3)
+.\.venv\Scripts\python backend/test_audio_api.py
+
+# Vibration endpoint test (exercises 27 kinematic features with sample recording)
+.\.venv\Scripts\python backend/test_vibration_api.py
+```
 
 ### Production Build Verification:
 ```powershell
 cd frontend
 npm run build
-# Output: ✓ 2203 modules transformed. dist built in 10.3s (0 errors).
+# Output: ✓ 2453 modules transformed. dist built with 0 errors.
 ```
 
 ---
@@ -356,13 +376,19 @@ engineguard/
 ├── backend/
 │   ├── app.py                       # FastAPI application & endpoints
 │   ├── test_tabular_api.py          # Backend test for tabular endpoint
-│   └── test_vibration_api.py        # Backend test for vibration endpoint
+│   ├── test_vibration_api.py        # Backend test for vibration endpoint
+│   └── test_audio_api.py            # Backend test for audio endpoint
+├── data/
+│   ├── synthetic_bearing_rul_demo.csv           # 600 synthetic run-to-failure histories
+│   └── synthetic_bearing_rul_demo.metadata.json # Simulation parameters & seed
 ├── frontend/
+│   ├── scripts/
+│   │   └── generateSyntheticRulCsv.ts           # Synthetic RUL CSV generation utility
 │   ├── src/
 │   │   ├── components/
 │   │   │   └── testing/
 │   │   │       ├── TestingPage.tsx                   # Unified multi-stream workspace
-│   │   │       ├── UnifiedResultsDashboard.tsx       # 7-section Part 8 dashboard
+│   │   │       ├── UnifiedResultsDashboard.tsx       # 8-section unified results dashboard
 │   │   │       ├── TabularInputPanel.tsx             # 14-sensor manual entry form
 │   │   │       ├── DiagnosticOutputCards.tsx         # 3-stream diagnostic cards
 │   │   │       ├── DiagnosticSummarySection.tsx      # Consensus & divergence analysis
@@ -370,8 +396,11 @@ engineguard/
 │   │   │       ├── AudioSignalAnalysisSection.tsx    # Audio waveform, FFT, STFT
 │   │   │       ├── VibrationSignalAnalysisSection.tsx# Vibration waveform, FFT, STFT
 │   │   │       ├── EngineHealthIndexCard.tsx         # EHI gauge, formula, breakdown
+│   │   │       ├── BearingRulSimulationCard.tsx      # Bearing RUL simulation card
 │   │   │       └── TestingEngineCanvas.tsx           # Three.js 3D exploded CAD canvas
 │   │   ├── lib/
+│   │   │   ├── diagnosticPdf.ts                      # Client-side vector PDF report generator
+│   │   │   ├── rulSimulation.ts                      # Weibull/Lognormal RUL simulation engine
 │   │   │   ├── engineHealthIndex.ts                  # Exact EHI formula implementation
 │   │   │   ├── signalProcessing.ts                   # In-browser Radix-2 FFT & DSP engine
 │   │   │   ├── tabularCsvSummary.ts                  # Descriptive statistics engine
@@ -381,6 +410,8 @@ engineguard/
 │   │       ├── diagnosis.ts                          # Diagnostic & telemetry TypeScript types
 │   │       └── engine.ts                             # 3D CAD component metadata
 │   ├── tests/
+│   │   ├── diagnosticPdf.test.ts                     # PDF report generation & structure tests
+│   │   ├── rulSimulation.test.ts                     # 17 RUL simulation assertions
 │   │   ├── engineHealthIndex.test.ts                 # 17 EHI test cases
 │   │   ├── signalProcessing.test.ts                  # 15 DSP test cases
 │   │   └── tabularValidation.test.ts                 # 9 tabular validation test cases
@@ -395,6 +426,7 @@ engineguard/
 │   ├── vibration_features.py                         # Vibration feature extraction
 │   ├── vibration_inference.py                        # Vibration inference
 │   └── audio_inference.py                            # Audio feature extraction & inference
+├── HACKATHON_RUL_DEMO.md                             # Live judge demonstration walkthrough
 ├── README.md                                         # Master technical documentation
 └── requirements.txt                                  # Python dependencies
 ```
@@ -406,7 +438,7 @@ engineguard/
 1. **Experimental Prototype**: EngineGuard is an engineering decision-support tool, not a certified automotive safety system or OBD-II compliance scanner.
 2. **Independent Models**: The three models operate on separate feature spaces and separate training datasets. They do not constitute a synchronized physical sensor-fusion model.
 3. **Engine Health Index Weights**: The weights ($W_E = 0.697, W_A = 0.084, W_V = 0.219$) are heuristic prototype values reflecting initial dataset reliability. They are not calibrated probabilities of mechanical failure.
-4. **No RUL Estimation**: This system computes fault evidence from model outputs; it does not predict Remaining Useful Life (RUL) or Time-to-Failure (TTF).
+4. **Synthetic Bearing RUL Simulation**: The included Bearing RUL card is an experimental simulation sandbox comparing user-entered vibration RMS against 600 synthetic Weibull wear trajectories to an assumed inspection threshold. It is explicitly labeled as a synthetic scenario and does not compute certified real-world physical vehicle component life or safe-to-drive mileage.
 5. **Physical Inspection Required**: Model outputs must always be validated through qualified physical inspection before undertaking mechanical teardowns or engine overhauls.
 
 ---

@@ -1,11 +1,12 @@
-import React from 'react';
-import { RotateCcw, ArrowLeft } from 'lucide-react';
+import React, { useState } from 'react';
+import { RotateCcw, ArrowLeft, FileDown } from 'lucide-react';
 import { DiagnosticOutputCards, StreamOutputResult } from './DiagnosticOutputCards';
 import { DiagnosticSummarySection } from './DiagnosticSummarySection';
 import { TabularDataSummarySection } from './TabularDataSummarySection';
 import { AudioSignalAnalysisSection } from './AudioSignalAnalysisSection';
 import { VibrationSignalAnalysisSection } from './VibrationSignalAnalysisSection';
 import { EngineHealthIndexCard } from './EngineHealthIndexCard';
+import { BearingRulSimulationCard } from './BearingRulSimulationCard';
 import { TabularDataSummary } from '../../lib/tabularCsvSummary';
 import { AudioEngineData, VibrationEngineData } from '../../types/diagnosis';
 import { EngineHealthIndexResult } from '../../lib/engineHealthIndex';
@@ -39,11 +40,27 @@ export const UnifiedResultsDashboard: React.FC<UnifiedResultsDashboardProps> = (
   onRunAnotherTest,
   onSelectVibrationChannel,
 }) => {
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+
   const analyzedCount = [
     data.outputs.tabular.status === 'SUCCESS',
     data.outputs.audio.status === 'SUCCESS',
     data.outputs.vibration.status === 'SUCCESS',
   ].filter(Boolean).length;
+
+  const handleDownloadPdf = async () => {
+    setPdfBusy(true);
+    setPdfError(null);
+    try {
+      const { downloadDiagnosticPdf } = await import('../../lib/diagnosticPdf');
+      downloadDiagnosticPdf(data);
+    } catch (error) {
+      setPdfError(error instanceof Error ? error.message : 'Could not generate PDF.');
+    } finally {
+      setPdfBusy(false);
+    }
+  };
 
   return (
     <div className="w-full space-y-6 text-[#F1F2F3] font-sans pb-12">
@@ -66,13 +83,29 @@ export const UnifiedResultsDashboard: React.FC<UnifiedResultsDashboardProps> = (
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2 font-mono text-xs">
+        <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
           <button
             onClick={onEditInputs}
             className="px-3.5 py-2 rounded-xl bg-[#171A1D] hover:bg-[#292D31] border border-[#292D31] text-[#A4A9AF] hover:text-[#F1F2F3] transition flex items-center gap-1.5 cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5 text-[#D66A32]" />
             <span>Edit Inputs</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => document.getElementById('bearing-rul')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            className="px-3.5 py-2 rounded-xl bg-[#171A1D] hover:bg-[#292D31] border border-[#D66A32]/50 text-[#D66A32] font-bold transition cursor-pointer"
+          >
+            RUL Simulation ↓
+          </button>
+          <button
+            type="button"
+            onClick={handleDownloadPdf}
+            disabled={pdfBusy}
+            className="px-3.5 py-2 rounded-xl bg-[#171A1D] hover:bg-[#292D31] border border-[#292D31] text-[#F1F2F3] hover:text-white font-bold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+          >
+            <FileDown className="w-3.5 h-3.5 text-[#D66A32]" />
+            <span>{pdfBusy ? 'Preparing PDF…' : 'Export PDF Report'}</span>
           </button>
           <button
             onClick={onRunAnotherTest}
@@ -83,6 +116,12 @@ export const UnifiedResultsDashboard: React.FC<UnifiedResultsDashboardProps> = (
           </button>
         </div>
       </div>
+
+      {pdfError && (
+        <div className="rounded-xl border border-red-500/40 bg-red-950/20 p-3 text-xs font-mono text-red-300">
+          PDF Export Failed: {pdfError}
+        </div>
+      )}
 
       {/* ============================================================ */}
       {/* 2. THREE DIAGNOSTIC OUTPUT CARDS (Strict Order: Tabular, Audio, Vibration) */}
@@ -145,21 +184,40 @@ export const UnifiedResultsDashboard: React.FC<UnifiedResultsDashboardProps> = (
         />
       </section>
 
+      {/* ============================================================ */}
+      {/* 8. BEARING RUL SIMULATION (Experimental Heuristic Sandbox)    */}
+      {/* ============================================================ */}
+      <section>
+        <BearingRulSimulationCard />
+      </section>
+
       {/* Bottom Footer Actions */}
-      <div className="flex justify-end gap-2 pt-2 font-mono text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[#292D31] font-mono text-xs">
         <button
-          onClick={onEditInputs}
-          className="px-4 py-2.5 rounded-xl bg-[#171A1D] hover:bg-[#292D31] border border-[#292D31] text-[#A4A9AF] hover:text-[#F1F2F3] transition cursor-pointer"
+          type="button"
+          onClick={handleDownloadPdf}
+          disabled={pdfBusy}
+          className="px-4 py-2.5 rounded-xl bg-[#171A1D] hover:bg-[#292D31] border border-[#292D31] text-[#F1F2F3] hover:text-white font-bold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
         >
-          ← Edit Current Inputs
+          <FileDown className="w-4 h-4 text-[#D66A32]" />
+          <span>{pdfBusy ? 'Preparing PDF…' : 'Download Diagnostic PDF Report'}</span>
         </button>
-        <button
-          onClick={onRunAnotherTest}
-          className="px-5 py-2.5 rounded-xl bg-[#D66A32] hover:bg-[#D66A32]/90 text-white font-bold transition flex items-center gap-2 cursor-pointer shadow-lg shadow-[#D66A32]/20"
-        >
-          <RotateCcw className="w-4 h-4" />
-          <span>New Diagnostic Run →</span>
-        </button>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onEditInputs}
+            className="px-4 py-2.5 rounded-xl bg-[#171A1D] hover:bg-[#292D31] border border-[#292D31] text-[#A4A9AF] hover:text-[#F1F2F3] transition cursor-pointer"
+          >
+            ← Edit Current Inputs
+          </button>
+          <button
+            onClick={onRunAnotherTest}
+            className="px-5 py-2.5 rounded-xl bg-[#D66A32] hover:bg-[#D66A32]/90 text-white font-bold transition flex items-center gap-2 cursor-pointer shadow-lg shadow-[#D66A32]/20"
+          >
+            <RotateCcw className="w-4 h-4" />
+            <span>New Diagnostic Run →</span>
+          </button>
+        </div>
       </div>
     </div>
   );

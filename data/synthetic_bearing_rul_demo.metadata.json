@@ -1,0 +1,17 @@
+{
+  "description": "Synthetic bearing wear curves for pipeline demonstration only; no measured run-to-failure mileage.",
+  "label_source": "synthetic",
+  "generated_by": "frontend/src/lib/rulSimulation.ts",
+  "virtual_bearings": 600,
+  "samples_per_bearing": 13,
+  "random_seed": 20261017,
+  "assumptions": {
+    "healthy_rms_demo_preset": 0.68,
+    "inspection_rms_demo_preset": 2.45,
+    "assumed_median_inspection_age_km": 120000,
+    "duty_profile": "normal",
+    "virtual_life_lognormal_sigma": 0.38,
+    "heavy_use_life_multiplier": 0.75
+  },
+  "warning": "Do not claim real-world RUL accuracy or safe-to-drive distance from this dataset."
+}
