@@ -1,4 +1,4 @@
-# Byte-compiled / optimized / DLL files
+﻿# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
 *$py.class
@@ -226,17 +226,6 @@ __pycache__/
 .pytest_cache/
 .env
 
-data/*
-!data/README.md
-
-models/*
-!models/README.md
-# ML asset protection (preserve tracked READMEs only)
-data/*
-!data/README.md
-models/*
-!models/README.md
-
 # Frontend
 node_modules/
 frontend/dist/
@@ -259,3 +248,21 @@ audit_bearing_reports.py
 audit_datasets.py
 preview_bearing_docs.py
 !data/synthetic_bearing_rul_demo.*
+
+# HackHive dataset sources for Honeycomb
+!data/
+data/*
+!data/README.md
+!data/Audio/
+!data/Audio/**
+!data/EngineFaultDB_Final.csv
+!data/vibration_raw/
+!data/vibration_raw/**
+!data/vibration_features.csv
+!data/vibration_report_features.csv
+!data/vibration_report_features_v2.csv
+!data/synthetic_bearing_rul_demo.csv
+!data/synthetic_bearing_rul_demo.metadata.json
+!audio_csv/
+!audio_csv/**
+
