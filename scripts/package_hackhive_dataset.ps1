@@ -1,7 +1,8 @@
 param(
     [string]$Root = "D:\engineguard",
     [string]$TeamName = "Honeycomb",
-    [string]$ProblemStatement = "PS2"
+    [string]$ProblemStatement = "PS2",
+    [string]$HuggingFacePath = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -39,6 +40,7 @@ Set-Content -Path $gitignorePath -Value $gi -Encoding UTF8
 
 # Stop if a single file exceeds GitHub standard file limits; use LFS or keep that file in OneDrive if needed.
 $dataFiles = @(Get-ChildItem "data" -Recurse -File) + @(Get-ChildItem "audio_csv" -Recurse -File)
+if ($HuggingFacePath -and (Test-Path $HuggingFacePath)) { $dataFiles += Get-ChildItem $HuggingFacePath -Recurse -File }
 $tooLarge = $dataFiles | Where-Object { $_.Length -gt 95MB }
 if ($tooLarge) { $tooLarge | Select-Object FullName,Length | Format-Table -AutoSize; throw "Files above 95 MB found. No push attempted; handle these with Git LFS or OneDrive." }
 $totalMB = [math]::Round((($dataFiles | Measure-Object Length -Sum).Sum / 1MB), 1)
@@ -56,8 +58,16 @@ $answer = Read-Host "Type YES to commit and push these datasets to GitHub"
 if ($answer -ne "YES") { Write-Host "Cancelled before commit/push."; exit 0 }
 git commit -m "Add HackHive datasets used by Honeycomb"
 if ($LASTEXITCODE -ne 0) { throw "Commit failed; inspect git status." }
-git push origin main
-if ($LASTEXITCODE -ne 0) { throw "Push failed. Local commit remains; resolve GitHub authentication or size limits before retrying." }
+$pushSucceeded = $true
+try {
+  git push origin main
+  if ($LASTEXITCODE -ne 0) { $pushSucceeded = $false; Write-Warning "Git push failed. The ZIP will still be built; resolve GitHub auth/size errors separately." }
+} catch {
+  $pushSucceeded = $false
+  Write-Warning "Git push failed: $_. The ZIP will still be built; resolve separately."
+}
+
+
 
 # Build separate dataset archive with provenance, manifest and SHA-256 inventory.
 $stage = Join-Path $env:TEMP "Honeycomb_PS2_dataset_submission"
@@ -69,6 +79,11 @@ Copy-Item "data\EngineFaultDB_Final.csv" (Join-Path $stage "01_Telemetry\EngineF
 Copy-Item "data\README.md" (Join-Path $stage "05_Documentation\EngineFaultDB_DATASET_CARD.md")
 Copy-Item "data\Audio" (Join-Path $stage "02_Audio\Audio") -Recurse
 Copy-Item "audio_csv\audio_mfcc_features.csv" (Join-Path $stage "02_Audio\audio_mfcc_features.csv")
+if ($HuggingFacePath -and (Test-Path $HuggingFacePath)) {
+  Copy-Item $HuggingFacePath (Join-Path $stage "04_Health_and_Synthetic\HuggingFace_engine_condition") -Recurse
+} else {
+  Write-Warning "Hugging Face dataset path was not provided. If you have downloaded it locally, rerun with -HuggingFacePath pointing to that folder."
+}
 if (Test-Path "audio_csv\audio_audit.csv") { Copy-Item "audio_csv\audio_audit.csv" (Join-Path $stage "02_Audio\audio_audit.csv") }
 Copy-Item "data\vibration_raw" (Join-Path $stage "03_Vibration\vibration_raw") -Recurse
 Copy-Item "data\vibration_features.csv" (Join-Path $stage "03_Vibration\vibration_features.csv")
@@ -116,7 +131,8 @@ $inventory | Export-Csv -NoTypeInformation -Encoding UTF8 (Join-Path $stage "05_
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 Compress-Archive -Path (Join-Path $stage "*") -DestinationPath $zipPath -CompressionLevel Optimal
 $zipSize = [math]::Round((Get-Item $zipPath).Length / 1MB, 1)
-Write-Host "`nSUCCESS: local dataset archive created after GitHub push." -ForegroundColor Green
+Write-Host "`nSUCCESS: local dataset archive created." -ForegroundColor Green
+Write-Host "Git push success: $pushSucceeded"
 Write-Host "ZIP: $zipPath"
 Write-Host "Size: $zipSize MB"
 Write-Host "Next: upload this ZIP to Honeycomb\PS2 in the organizer OneDrive folder."
