@@ -17,6 +17,7 @@ git status --short
 
 $required = @("data\EngineFaultDB_Final.csv","data\vibration_features.csv","data\Audio","data\vibration_raw","audio_csv\audio_mfcc_features.csv","data\synthetic_bearing_rul_demo.csv","data\synthetic_bearing_rul_demo.metadata.json")
 foreach ($p in $required) { if (-not (Test-Path $p)) { throw "Required dataset input missing: $p. Nothing has been pushed." } }
+if ($HuggingFacePath -and -not (Test-Path $HuggingFacePath)) { throw "HuggingFacePath does not exist: $HuggingFacePath" }
 
 # Clean local absolute paths from audio audit metadata.
 if (Test-Path "audio_csv\audio_audit.csv") {
@@ -51,6 +52,8 @@ git add .gitignore
 git add -f data/README.md data/EngineFaultDB_Final.csv data/vibration_features.csv data/synthetic_bearing_rul_demo.csv data/synthetic_bearing_rul_demo.metadata.json
 git add -f data/Audio data/vibration_raw audio_csv
 if ($LASTEXITCODE -ne 0) { throw "git add failed" }
+$staged = git diff --cached --name-only
+if ($staged -match "^(venv|\.venv|node_modules|dist|frontend/dist|\.audio_test_venv|\.freebuff|_scratch_untracked|ui_src|ui_src2|ui_work)/") { throw "Unsafe path staged. Review staged names before continuing." }
 Write-Host "`n--- Staged data change summary ---" -ForegroundColor Cyan
 git diff --cached --stat
 Write-Host "`nReview staged file list and verify source redistribution rights before publishing raw third-party data." -ForegroundColor Yellow
@@ -128,6 +131,11 @@ Before transferring raw files, verify each source licence permits redistribution
 Set-Content -Path (Join-Path $stage "05_Documentation\DATASET_MANIFEST.md") -Value $manifest -Encoding UTF8
 $inventory = Get-ChildItem $stage -Recurse -File | Sort-Object FullName | ForEach-Object { $rel=$_.FullName.Substring($stage.Length+1); [PSCustomObject]@{path=$rel;size_bytes=$_.Length;sha256=(Get-FileHash $_.FullName -Algorithm SHA256).Hash} }
 $inventory | Export-Csv -NoTypeInformation -Encoding UTF8 (Join-Path $stage "05_Documentation\SHA256SUMS.csv")
+if ($HuggingFacePath -and (Test-Path $HuggingFacePath)) {
+  $hfTarget = Join-Path $stage "04_Health_and_Synthetic\HuggingFace_engine_condition"
+  New-Item -ItemType Directory -Path $hfTarget -Force | Out-Null
+  Get-ChildItem $HuggingFacePath -Force | Copy-Item -Destination $hfTarget -Recurse
+}
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 Compress-Archive -Path (Join-Path $stage "*") -DestinationPath $zipPath -CompressionLevel Optimal
 $zipSize = [math]::Round((Get-Item $zipPath).Length / 1MB, 1)
